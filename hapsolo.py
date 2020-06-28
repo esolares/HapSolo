@@ -82,7 +82,6 @@ if pythonversion != 2:
     quit(1)
 
 ######################################
-# use this for calculating asm size and n50
 def CalculateContigSizes(asmFileName):
     # contigsDict[contigname] = [contiglen,headerpos,startseqpos,endseqpos]
     fin = open(asmFileName)
@@ -101,13 +100,13 @@ def CalculateContigSizes(asmFileName):
         line = fin.readline().replace('\n', '')
         count = count + 1
         if line[0:1] == '>':
-            # print 'found seq_name ' + line
+            # print('found seq_name ' + line)
             seqName = line.split(" ")[0].replace('>', '').replace('/', '_')
             # seqName = line.split("_")[0]
             lastPos = startPos = fin.tell()
             line = fin.readline().replace('\n', '')
             count = count + 1
-            # print 'begin while loop on seq ' + line
+            # print('begin while loop on seq ' + line)
             while line[0:1] != '>' and line[0:1] != '':
                 seqLen = seqLen + len(line)
                 endPos = lastPos
@@ -116,7 +115,7 @@ def CalculateContigSizes(asmFileName):
                 count = count + 1
             if line[0:1] == '>' or line[0:1] == '':
                 myContigSizeDict[seqName] = [seqLen, headerPos, startPos, endPos]
-                # print len(seq_read.replace("\n", ""))
+                # print(len(seq_read.replace("\n", "")))
                 seqName = ''
                 seqLen = 0
                 count = count - 1
