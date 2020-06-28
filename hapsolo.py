@@ -3,7 +3,7 @@
 """
 @author: Edwin
 """
-import argparse, glob, gzip, os, datetime
+import argparse, glob, gzip, os, datetime, sys
 from math import exp, log, ceil
 from random import seed, randint, uniform
 import pandas as pd
@@ -18,7 +18,6 @@ parser.add_argument('-m', '--maxzeros', help='Max # of times cost function delta
 parser.add_argument('-t', '--threads', help='# of threads. Multiplies iterations by threads. Default = 1', type=int, required=False)
 parser.add_argument('-n', '--niterations', help='# of total iterations to run per gradient descent. Default = 1000', type=int, required=False)
 parser.add_argument('-B', '--Bestn', help='# of best candidate assemblies to return using gradient descent. Default = 1', type=int, required=False)
-# todo: implement thetas for F, M, D, S BUSCO's
 parser.add_argument('-S', '--thetaS', help='Weight for single BUSCOs in linear fxn. Default = 1.0', type=int, required=False)
 parser.add_argument('-D', '--thetaD', help='Weight for single BUSCOs in linear fxn. Default = 1.0', type=int, required=False)
 parser.add_argument('-F', '--thetaF', help='Weight for single BUSCOs in linear fxn. Default = 0.0', type=int, required=False)
@@ -75,6 +74,12 @@ qrycontigset = set()
 myMinContigSize = 1000
 busco2contigdict = dict()
 contigs2buscodict = dict()
+pythonversion = sys.version_info[0]
+
+if pythonversion != 2:
+    print("Please run the correct version of Python. You are currently running Python " + str(pythonversion))
+    print("HapSolo is compatible with Python 2")
+    quit(1)
 
 ######################################
 # use this for calculating asm size and n50
