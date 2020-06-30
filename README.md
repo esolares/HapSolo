@@ -105,7 +105,7 @@ To run:
 sbatch sbatch_blat.sh
 ```
 ###### Note: If the RAM usage is managed by your job scheduler, you will need to alot a sufficient amount of RAM to your job submission script. The contig size will determine how much RAM will be required. We recommend setting this to a minimum of 4GB. Larger files may require 8-16GB of RAM. For mammals, which are repeat rich, require a minimum value of 16GB. 
-If all alignment jobs completed successfully, we will then need to concatenate the individual PSL files into a larger aligment file. To do this we have provided the bash_andreaconcatpsl.sh script.
+If all alignment jobs completed successfully, we will then need to concatenate the individual PSL files into a larger aligment file. To do this we have provided the bash_andreaconcatpsl.sh script provided by A. Minio at the Cantu Lab in UC Davis.
 To run:
 ```
 bash_andreaconcatpsl.sh myoutput_selfaln.PSL
