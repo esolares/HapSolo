@@ -250,7 +250,7 @@ def ReduceASM(myPID, myQPctMin, myQRPctMin):
     return goodcontigset
 
 
-def gradientdescent(job_args):
+def hillclimbing(job_args):
     mythread = job_args[0]
     numofiterations = job_args[1]
     # todo: remove resolution as it is already a global var. adjust job args
@@ -577,11 +577,11 @@ if __name__ == '__main__':
     qrycontigset = set(mypddf['qName'])
     missingrefcontigset = set(myContigsDict.keys()) - qrycontigset
     busco2contigdict, contigs2buscodict = importBuscos(buscofileloc)
-    # execute gradient descent here.
+    # execute Hill Climbing here.
     job_args = list()
     if threads == 1:
         job_args = [0, iterations, resolution, uniform(0.0, 1), uniform(0.0, 1), uniform(0.0, 1)]
-        mylist = gradientdescent(job_args)
+        mylist = hillclimbing(job_args)
         mybestnscoreslist = mylist[0]
         for i in range(0, bestnscores):
             for j in range(0, len(mybestnscoreslist[0][4])):
@@ -608,7 +608,7 @@ if __name__ == '__main__':
         for i in range(threads):
             job_args.append([i, iterations, resolution, uniform(0.0, 1), uniform(0.0, 1), uniform(0.0, 1)])
         pool = mp.Pool(processes=threads)
-        mylist = pool.map(gradientdescent, job_args)
+        mylist = pool.map(hillclimbing, job_args)
         mybestnscoreslist = list()
         mybestnscoreslist.append(mylist[0][0][0])
         for i in range(0, threads):
