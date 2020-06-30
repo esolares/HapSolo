@@ -3,7 +3,7 @@
 """
 @author: Edwin
 """
-import argparse, glob, gzip, os, datetime
+import argparse, glob, gzip, os, datetime, sys
 from math import exp, log, ceil
 from random import seed, randint, uniform
 import pandas as pd
@@ -18,7 +18,6 @@ parser.add_argument('-m', '--maxzeros', help='Max # of times cost function delta
 parser.add_argument('-t', '--threads', help='# of threads. Multiplies iterations by threads. Default = 1', type=int, required=False)
 parser.add_argument('-n', '--niterations', help='# of total iterations to run per gradient descent. Default = 1000', type=int, required=False)
 parser.add_argument('-B', '--Bestn', help='# of best candidate assemblies to return using gradient descent. Default = 1', type=int, required=False)
-# todo: implement thetas for F, M, D, S BUSCO's
 parser.add_argument('-S', '--thetaS', help='Weight for single BUSCOs in linear fxn. Default = 1.0', type=int, required=False)
 parser.add_argument('-D', '--thetaD', help='Weight for single BUSCOs in linear fxn. Default = 1.0', type=int, required=False)
 parser.add_argument('-F', '--thetaF', help='Weight for single BUSCOs in linear fxn. Default = 0.0', type=int, required=False)
@@ -75,9 +74,14 @@ qrycontigset = set()
 myMinContigSize = 1000
 busco2contigdict = dict()
 contigs2buscodict = dict()
+pythonversion = sys.version_info[0]
+
+if pythonversion != 2:
+    print("Please run the correct version of Python. You are currently running Python " + str(pythonversion))
+    print("HapSolo is compatible with Python 2")
+    quit(1)
 
 ######################################
-# use this for calculating asm size and n50
 def CalculateContigSizes(asmFileName):
     # contigsDict[contigname] = [contiglen,headerpos,startseqpos,endseqpos]
     fin = open(asmFileName)
@@ -96,13 +100,13 @@ def CalculateContigSizes(asmFileName):
         line = fin.readline().replace('\n', '')
         count = count + 1
         if line[0:1] == '>':
-            # print 'found seq_name ' + line
+            # print('found seq_name ' + line)
             seqName = line.split(" ")[0].replace('>', '').replace('/', '_')
             # seqName = line.split("_")[0]
             lastPos = startPos = fin.tell()
             line = fin.readline().replace('\n', '')
             count = count + 1
-            # print 'begin while loop on seq ' + line
+            # print('begin while loop on seq ' + line)
             while line[0:1] != '>' and line[0:1] != '':
                 seqLen = seqLen + len(line)
                 endPos = lastPos
@@ -111,7 +115,7 @@ def CalculateContigSizes(asmFileName):
                 count = count + 1
             if line[0:1] == '>' or line[0:1] == '':
                 myContigSizeDict[seqName] = [seqLen, headerPos, startPos, endPos]
-                # print len(seq_read.replace("\n", ""))
+                # print(len(seq_read.replace("\n", "")))
                 seqName = ''
                 seqLen = 0
                 count = count - 1
