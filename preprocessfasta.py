@@ -1,8 +1,14 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+@author: Edwin
+"""
+
 import re, os, argparse
 
 # usage preprocessfasta.py -i myfastafile.fasta
-parser = argparse.ArgumentParser(description='Preprocess fasta file and outputs a clean fasta and seperates contigs based on unique headers. Removes special chars')
-parser.add_argument('-i', '--input', help='Input Fasta file', type=str, required=True)
+parser = argparse.ArgumentParser(description='Preprocess FASTA file and outputs a clean FASTA and seperates contigs based on unique headers. Removes special chars')
+parser.add_argument('-i', '--input', help='Input FASTA file', type=str, required=True)
 parser.add_argument('-m', '--maxcontig', help='Max size of contig in Mb to output in contigs folder.', type=str, required=False)
 
 args = parser.parse_args()
@@ -40,7 +46,7 @@ for i in range(1, maxlen+1):
         break
 
 if uniqueheadersize == -1:
-    print('This fasta file does not contain unique headers. Please fix and rerun again.')
+    print('This FASTA file does not contain unique headers. Please fix and rerun again.')
     quit(1)
 
 for i in range(len(myheaderidxs)):
