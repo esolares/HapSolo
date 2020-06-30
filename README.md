@@ -24,7 +24,8 @@ export PATH=$HAPSOLO/scripts:$PATH
 ###### Note: If you are running a custom environment for python, make sure to replace the first line of preprocessfasta.py and hapsolo.py to reflect the proper python running environment
 
 # How to run HapSolo
-HapSolo requires a Blat alignment file and a busco directory that contains a busco output for each of the contigs in your contig assembly. To do this we have included a scripts directory that contains scripts that can be used for preprocessing and postprocessing for your HapSolo run.
+HapSolo requires a Blat alignment file and a busco directory that contains a busco output for each of the contigs in your contig assembly. To do this we have included a scripts directory that contains scripts that can be used for preprocessing and postprocessing for your HapSolo run. 
+###### Note: For simplicity job submission scripts have been added: sbatch_preprocess.sh and qsub_preprocess.sh for SLURM and SGE respectively that only require that the REF variable be assigned to the name of your contig assembly FASTA file.
 
 We highly recommend you run preprocessfasta.py on your contig assembly first. The run syntax of this python script is:
 
@@ -50,8 +51,8 @@ This script will create a contigs directory in your current working directory th
 
 HapSolo requires three arguments: Your preprocessed contig assembly file, your Blat PSL file (gzipped or uncompressed), and the location of your BUSCO results for each contig fasta file. The run syntax is as follows:
 ```
-hapsolo.py -i YOURCONTIGASSEMBLY.fasta -p YOURPSLFILE.psl -b YOURBUSCOOUTPUTDIRECTORY
-hapsolo.py -i contigassembly.fasta -p self_alignment.psl -b ./contigs/busco/
+hapsolo.py -i YOURPREPROCESSEDCONTIGASSEMBLY.fasta -p YOURPSLFILE.psl -b YOURBUSCOOUTPUTDIRECTORY
+hapsolo.py -i contigassembly_new.fasta -p self_alignment.psl -b ./contigs/busco/
 
 usage: hapsolo.py [-h] -i INPUT -p PSL -b BUSCOS [-m MAXZEROS] [-t THREADS]
                   [-n NITERATIONS] [-B BESTN] [-S THETAS] [-D THETAD]
@@ -88,6 +89,29 @@ optional arguments:
                         Weight for single BUSCOs in linear fxn. Default = 1.0
 
 ```
+# Blat all-by-all alignment 
+Here we provide scripts for running Blat on an HPC using SGE or SLURM job schedulers.
+To preprocess, you should have run the qsub_preprocess.sh or the sbatch_preprocess.sh scripts above. These files only require that you assign your FASTA file name to the REF variable. Once the preprocessing step has been completed a jobfile.txt file, a new FASTA file containing _new.fasta appended to the name and a contigs directory containing FASTA files for each contig will have been created. This step does require quite a bit of memory, so it is recommended that you consider this prior to running this step.
+
+To submit the Blat all-by-all alignment job, we have provided scripts for either SLURM or SGE, sbatch_blat.sh and qsub_blat.sh.
+To run:
+```
+sbatch sbatch_preprocess.sh
+wc -l jobfile.txt
+```
+Here we recommend you insert the output of wc -l to the array setting in your job submission script. Here you will need to assign the new FASTA file that has been created by the preprocess.py Python script to the REF variable in the blat.sh submission scripts. For all intensive purposes, we recommend that you use this new file for all subsequent runs.
+To run:
+```
+sbatch sbatch_blat.sh
+```
+###### Note: If the RAM usage is managed by your job scheduler, you will need to alot a sufficient amount of RAM to your job submission script. The contig size will determine how much RAM will be required. We recommend setting this to a minimum of 4GB. Larger files may require 8-16GB of RAM. For mammals, which are repeat rich, require a minimum value of 16GB. 
+If all alignment jobs completed successfully, we will then need to concatenate the individual PSL files into a larger aligment file. To do this we have provided the bash_andreaconcatpsl.sh script.
+To run:
+```
+bash_andreaconcatpsl.sh myoutput_selfaln.PSL
+```
+This script will look for all job*.PSL files that have been created by the parallel all-by-all alignment. 
+###### Note: You could also use the parallel version of Blat, pblat available here https://github.com/icebert/pblat
 
 # BUSCO run for each contig fasta file
 To do this we recommend you run the following:
