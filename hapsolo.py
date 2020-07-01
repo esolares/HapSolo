@@ -13,6 +13,7 @@ import multiprocessing as mp
 parser = argparse.ArgumentParser(description='Process alignments and BUSCO"s for selecting reduced assembly candidates')
 parser.add_argument('-i', '--input', help='Input Fasta file', type=str, required=True)
 parser.add_argument('-p', '--psl', help='BLAT PSL alignnment file', type=str, required=True)
+parser.add_argument('-a', '--paf', help='Minimap2 PAF alignnment file', type=str, required=False)
 parser.add_argument('-b', '--buscos', help='Location BUSCO output directories. i.e. buscoN/', type=str, required=True)
 parser.add_argument('-m', '--maxzeros', help='Max # of times cost function delta can consecutively be 0. Default = 10', type=str, required=False)
 parser.add_argument('-t', '--threads', help='# of threads. Multiplies iterations by threads. Default = 1', type=int, required=False)
@@ -29,7 +30,7 @@ args = parser.parse_args()
 useprimaryformula = True
 
 myasmFileName = args.input
-filename = args.psl
+alignmentfile = args.psl
 buscofileloc = args.buscos
 maxzeros = args.maxzeros
 threads = args.threads
@@ -60,7 +61,7 @@ if thetaF == None:
 # if thetaT == None:
     # thetaT = 0.0
 
-# filename = 'chardonnay_quiv2x_qm3x_fu_qm2xfu_pilon.self_blat.psl'
+# alignmentfile = 'chardonnay_quiv2x_qm3x_fu_qm2xfu_pilon.self_blat.psl'
 # myasmFileName = 'chardonnay_quiv2x_qm3x_fu_qm2xfu_pilon.fasta'
 
 # maxASMSize = 600 * 1000000
@@ -452,8 +453,64 @@ def uniquepriorityqueue(pqlist, myvalue):
                     pqlist = pqlist[0:myfinaldupelist[i][0]] + pqlist[myfinaldupelist[i][0] + 1:]
 
 
+def CreateMM2AlignmentDataStructure(alignmentfile):
+    global mypddf
+    fileext = alignmentfile.split('.')[-1]
+    if fileext == 'gz':
+        fin = gzip.open(alignmentfile, 'r')
+    elif fileext == 'paf':
+        fin = open(alignmentfile, 'r')
+    myLines = fin.readlines()
+    fin.close()
+    for lineNum in range(0, len(myLines)):
+        myLines[lineNum] = myLines[lineNum].strip().split('\t')
+    if len(myLines) == 0:
+        print('Empty PAF file. Please fix and rerun')
+        quit(1)
+    for lineNum in range(0, len(myLines)):
+        if len(myLines[lineNum]) > 18:
+            print('Invalid PAF format. Line Number: ' + str(lineNum + 1) + ' contains more than 18 fields. ' + str(
+                len(myLines[lineNum])) + ' fields to be exact! Please correct.')
+    # pandas time!
+    mypddf = pd.DataFrame(myLines[:],
+                          columns=['qName', 'qSize', 'qStart', 'qEnd', 'strand', 'tName', 'tSize', 'tStart', 'tEnd',
+                                   'matches', 'gaps+matches', 'mappingqv', 'alignmenttype', 'numofminschain',
+                                   'chainingscore', 'secondchainingscore', 'approxdivergence', 'lqrhrepseeds'])
+    myLines = list() #clear this var to release RAM
+    mypddf['qStart'] = pd.to_numeric(mypddf['qStart'])
+    mypddf['qEnd'] = pd.to_numeric(mypddf['qEnd'])
+    mypddf['tStart'] = pd.to_numeric(mypddf['tStart'])
+    mypddf['tEnd'] = pd.to_numeric(mypddf['tEnd'])
+    mypddf['qSize'] = pd.to_numeric(mypddf['qSize'])
+    mypddf['tSize'] = pd.to_numeric(mypddf['tSize'])
+    mypddf['matches'] = pd.to_numeric(mypddf['matches'])
+    # mypddf['misMatches'] = pd.to_numeric(mypddf['misMatches'])
+    # mypddf['repMatches'] = pd.to_numeric(mypddf['repMatches'])
+    # mypddf['nCount'] = pd.to_numeric(mypddf['nCount'])
+    # mypddf['qBaseInsert'] = pd.to_numeric((mypddf['qBaseInsert']))
+    # mypddf['qName'] = mypddf['qName'].str.replace('|','_').str[0:13]
+    # mypddf['tName'] = mypddf['tName'].str.replace('|','_').str[0:13]
+    # mypddf['qName'] = mypddf['qName'].str.split('|').str[0]
+    # mypddf['tName'] = mypddf['tName'].str.split('|').str[0]
+    mypddf['qMin'] = mypddf[['qStart', 'qEnd']].min(axis=1)
+    mypddf['qMax'] = mypddf[['qStart', 'qEnd']].max(axis=1)
+    mypddf['tMin'] = mypddf[['tStart', 'tEnd']].min(axis=1)
+    mypddf['tMax'] = mypddf[['tStart', 'tEnd']].max(axis=1)
+    mypddf['qAlignLen'] = mypddf['qMax'] - mypddf['qMin']
+    mypddf['rAlignLen'] = mypddf['tMax'] - mypddf['tMin']
+    mypddf['QRAlignLenPct'] = mypddf[['qAlignLen', 'rAlignLen']].apply(lambda x: CalculatePctAlign(*x), axis=1)
+    mypddf['QPct'] = mypddf[['qAlignLen', 'qSize']].apply(lambda x: CalculatePctAlign(*x), axis=1)
+    mypddf['PID'] = mypddf[['matches', 'qAlignLen']].apply(lambda x: CalculatePctAlign(*x), axis=1)
+    mypddf['RPct'] = mypddf[['rAlignLen', 'tSize']].apply(lambda x: CalculatePctAlign(*x), axis=1)
+    # Here we create a mask where qryname != refname
+    lenbeforemask = len(mypddf)
+    mypddf = mypddf[mypddf['qName'] != mypddf['tName']]
+    lenaftermask = len(mypddf)
+    print(str(lenbeforemask - lenaftermask) + ' alignments Purged where query = reference')
+    return mypddf[['qName', 'qSize', 'QPct', 'PID', 'QRAlignLenPct']]
+
 # Create a dictionary based on the alignment file
-def CreateAlignmentDataStruture(alignmentfile):
+def CreateBlatAlignmentDataStruture(alignmentfile):
     global mypddf
     counter = 0
     fileext = alignmentfile.split('.')[-1]
@@ -500,8 +557,8 @@ def CreateAlignmentDataStruture(alignmentfile):
             counter += 1
         else:
             myLines[lineNum] = myLines[lineNum][0:17]
-    print(str(counter) + ' number of extra lines found in ' + filename + '.')
-    mypddf = pd.DataFrame(myLines[5:],
+    print(str(counter) + ' number of extra lines found in ' + alignmentfile + '.')
+    mypddf = pd.DataFrame(myLines[mystop-1:],
                           columns=['matches', 'misMatches', 'repMatches', 'nCount', 'qNumInsert', 'qBaseInsert',
                                    'tNumInsert', 'tBaseInsert', 'strand', 'qName', 'qSize', 'qStart', 'qEnd', 'tName',
                                    'tSize', 'tStart', 'tEnd'])
@@ -516,7 +573,7 @@ def CreateAlignmentDataStruture(alignmentfile):
     # mypddf['misMatches'] = pd.to_numeric(mypddf['misMatches'])
     # mypddf['repMatches'] = pd.to_numeric(mypddf['repMatches'])
     # mypddf['nCount'] = pd.to_numeric(mypddf['nCount'])
-    mypddf['qBaseInsert'] = pd.to_numeric((mypddf['qBaseInsert']))
+    # mypddf['qBaseInsert'] = pd.to_numeric((mypddf['qBaseInsert']))
     # mypddf['qName'] = mypddf['qName'].str.replace('|','_').str[0:13]
     # mypddf['tName'] = mypddf['tName'].str.replace('|','_').str[0:13]
     # mypddf['qName'] = mypddf['qName'].str.split('|').str[0]
@@ -573,7 +630,10 @@ if __name__ == '__main__':
     except:
         print('Invalid assembly file. Please check and try again')
         quit(1)
-    mypddf = CreateAlignmentDataStruture(filename)
+    if(alignmetextension == 'psl' or alignmentextension = 'psl.gz'):
+        mypddf = CreateBlatAlignmentDataStruture(alignmentfile)
+    elif(alignmetextension == 'paf'):
+        mypddf = CreateMM2AlignmentDataStructure(alignmentfile)
     qrycontigset = set(mypddf['qName'])
     missingrefcontigset = set(myContigsDict.keys()) - qrycontigset
     busco2contigdict, contigs2buscodict = importBuscos(buscofileloc)
