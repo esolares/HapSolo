@@ -10,19 +10,22 @@ import pandas as pd
 import multiprocessing as mp
 
 # usage haplotigreduction.py mypslfile.psl myfastafile.fasta buscoresults.tsv
-parser = argparse.ArgumentParser(description='Process alignments and BUSCO"s for selecting reduced assembly candidates')
+parser = argparse.ArgumentParser(description='Process alignments and BUSCO"s for selecting reduced assembly candidates', epilog='-p/--psl and -a/--paf are mutually exclusive')
 parser.add_argument('-i', '--input', help='Input Fasta file', type=str, required=True)
-parser.add_argument('-p', '--psl', help='BLAT PSL alignnment file', type=str, required=True)
+parser.add_argument('-p', '--psl', help='BLAT PSL alignnment file', type=str, required=False)
 parser.add_argument('-a', '--paf', help='Minimap2 PAF alignnment file', type=str, required=False)
+group = parser.add_mutually_exclusive_group(required=True)
+group.add_argument('-p', '--psl', help='BLAT PSL alignnment file', type=str)
+group.add_argument('-a', '--paf', help='Minimap2 PAF alignnment file. Note. paf file functionality is currently experimental', type=str)
 parser.add_argument('-b', '--buscos', help='Location BUSCO output directories. i.e. buscoN/', type=str, required=True)
 parser.add_argument('-m', '--maxzeros', help='Max # of times cost function delta can consecutively be 0. Default = 10', type=str, required=False)
 parser.add_argument('-t', '--threads', help='# of threads. Multiplies iterations by threads. Default = 1', type=int, required=False)
 parser.add_argument('-n', '--niterations', help='# of total iterations to run per gradient descent. Default = 1000', type=int, required=False)
 parser.add_argument('-B', '--Bestn', help='# of best candidate assemblies to return using gradient descent. Default = 1', type=int, required=False)
 parser.add_argument('-S', '--thetaS', help='Weight for single BUSCOs in linear fxn. Default = 1.0', type=int, required=False)
-parser.add_argument('-D', '--thetaD', help='Weight for single BUSCOs in linear fxn. Default = 1.0', type=int, required=False)
-parser.add_argument('-F', '--thetaF', help='Weight for single BUSCOs in linear fxn. Default = 0.0', type=int, required=False)
-parser.add_argument('-M', '--thetaM', help='Weight for single BUSCOs in linear fxn. Default = 1.0', type=int, required=False)
+parser.add_argument('-D', '--thetaD', help='Weight for duplicate BUSCOs in linear fxn. Default = 1.0', type=int, required=False)
+parser.add_argument('-F', '--thetaF', help='Weight for fragmented BUSCOs in linear fxn. Default = 0.0', type=int, required=False)
+parser.add_argument('-M', '--thetaM', help='Weight for missing BUSCOs in linear fxn. Default = 1.0', type=int, required=False)
 # parser.add_argument('-T', '--thetaS', help='Weight for single BUSCOs in linear fxn. Default = 1.0', type=int, required=False)
 
 args = parser.parse_args()
@@ -30,7 +33,8 @@ args = parser.parse_args()
 useprimaryformula = True
 
 myasmFileName = args.input
-alignmentfile = args.psl
+pslalignmentfile = args.psl
+pafalignmentfile = args.paf
 buscofileloc = args.buscos
 maxzeros = args.maxzeros
 threads = args.threads
@@ -42,6 +46,10 @@ thetaM = args.thetaM
 thetaF = args.thetaF
 # thetaT = args.thetaT
 
+#if alignmentfile == None:
+#    print('Please assign an alignment file. Either by using Minimap2 or Blat/PBlat')
+#    print('This can be done by doing either --paf or --psl. Please only submit one file.')
+#    quit(1)
 if maxzeros == None:
     maxzeros = 10
 if threads == None:
@@ -65,6 +73,7 @@ if thetaF == None:
 # myasmFileName = 'chardonnay_quiv2x_qm3x_fu_qm2xfu_pilon.fasta'
 
 # maxASMSize = 600 * 1000000
+
 dumpscores = True
 stepsize = 0.0001
 buscotypes = ['C', 'S', 'D', 'F', 'M']
@@ -286,7 +295,7 @@ def hillclimbing(job_args):
     bestpurgedset = set()
     # bestscore = oldasmscorefxn
     bestbuscos = allcontigsbuscoscore.copy()
-    # todo: use fxn uniquepriorityqueue(pqlist, myvalues) for returning a sorted unique priority list
+    # use fxn uniquepriorityqueue(pqlist, myvalues) for returning a sorted unique priority list
     myvalues = [oldasmscorefxn, bestcontigset, bestpurgedset, bestbuscos, [0.0, 0.0, 0.0]]
     # uniquepriorityqueue(bestnscoreslist[bestnscoreidx], [score, setofgoodcontigs, setofmissingcontigs, listofparameters, buscos])
     bestnscoreslist.append(myvalues)
@@ -509,6 +518,7 @@ def CreateMM2AlignmentDataStructure(alignmentfile):
     print(str(lenbeforemask - lenaftermask) + ' alignments Purged where query = reference')
     return mypddf[['qName', 'qSize', 'QPct', 'PID', 'QRAlignLenPct']]
 
+
 # Create a dictionary based on the alignment file
 def CreateBlatAlignmentDataStruture(alignmentfile):
     global mypddf
@@ -630,10 +640,10 @@ if __name__ == '__main__':
     except:
         print('Invalid assembly file. Please check and try again')
         quit(1)
-    if(alignmetextension == 'psl' or alignmentextension = 'psl.gz'):
-        mypddf = CreateBlatAlignmentDataStruture(alignmentfile)
-    elif(alignmetextension == 'paf'):
-        mypddf = CreateMM2AlignmentDataStructure(alignmentfile)
+    if pslalignmentfile == None:
+        mypddf = CreateMM2AlignmentDataStructure(pafalignmentfile)
+    elif pafalignmentfile == None:
+        mypddf = CreateBlatAlignmentDataStruture(pslalignmentfile)
     qrycontigset = set(mypddf['qName'])
     missingrefcontigset = set(myContigsDict.keys()) - qrycontigset
     busco2contigdict, contigs2buscodict = importBuscos(buscofileloc)
