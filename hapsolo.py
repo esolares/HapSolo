@@ -12,8 +12,6 @@ import multiprocessing as mp
 # usage haplotigreduction.py mypslfile.psl myfastafile.fasta buscoresults.tsv
 parser = argparse.ArgumentParser(description='Process alignments and BUSCO"s for selecting reduced assembly candidates', epilog='-p/--psl and -a/--paf are mutually exclusive')
 parser.add_argument('-i', '--input', help='Input Fasta file', type=str, required=True)
-parser.add_argument('-p', '--psl', help='BLAT PSL alignnment file', type=str, required=False)
-parser.add_argument('-a', '--paf', help='Minimap2 PAF alignnment file', type=str, required=False)
 group = parser.add_mutually_exclusive_group(required=True)
 group.add_argument('-p', '--psl', help='BLAT PSL alignnment file', type=str)
 group.add_argument('-a', '--paf', help='Minimap2 PAF alignnment file. Note. paf file functionality is currently experimental', type=str)
