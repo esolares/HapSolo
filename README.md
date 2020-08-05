@@ -58,7 +58,7 @@ The run syntax is as follows:
 hapsolo.py -i YOURPREPROCESSEDCONTIGASSEMBLY.fasta -p YOURPSLFILE.psl -b YOURBUSCOOUTPUTDIRECTORY
 hapsolo.py -i contigassembly_new.fasta -p self_alignment.psl -b ./contigs/busco/
 
-usage: hapsolo.py [-h] -i INPUT -p PSL -b BUSCOS [-m MAXZEROS] [-t THREADS]
+usage: hapsolo.py [-h] -i INPUT (-p PSL | -a PAF) -b BUSCOS [-m MAXZEROS] [-t THREADS]
                   [-n NITERATIONS] [-B BESTN] [-S THETAS] [-D THETAD]
                   [-F THETAF] [-M THETAM]
 
@@ -69,6 +69,9 @@ optional arguments:
   -i INPUT, --input INPUT
                         Input Fasta file
   -p PSL, --psl PSL     BLAT PSL alignnment file
+  -a PAF, --paf PAF     Minimap2 PAF alignnment file. Note. paf file
+                        functionality is currently experimental
+
   -b BUSCOS, --buscos BUSCOS
                         Location BUSCO output directories. i.e. buscoN/
   -m MAXZEROS, --maxzeros MAXZEROS
@@ -91,6 +94,8 @@ optional arguments:
                         Weight for single BUSCOs in linear fxn. Default = 0.0
   -M THETAM, --thetaM THETAM
                         Weight for single BUSCOs in linear fxn. Default = 1.0
+
+-p/--psl and -a/--paf are mutually exclusive
 
 ```
 # All-by-All Alignment. Please choose Blat or MiniMap2
