@@ -93,6 +93,18 @@ optional arguments:
                         Weight for single BUSCOs in linear fxn. Default = 1.0
 
 ```
+# All-by-All Alignment. Please choose Blat or MiniMap2
+
+# MiniMap2
+We recommend using one of the following options below when running MiniMap2:
+```
+minimap2 -t 36 -k19 -w5 -A1 -B2 -O3,13 -E2,1 -s200 -z200 -N50 --min-occ-floor=100 ${QRY} ${QRY} > $(basename ${QRY} .fasta)_self_align.paf1
+minimap2 -t 36 -P -k19 -w2 -A1 -B2 -O1,6 -E2,1 -s200 -z200 -N50 --min-occ-floor=100 ${QRY} ${QRY} > $(basename ${QRY} .fasta)_self_align.paf
+minimap2 -t 36 -P -G 500k -k19 -w2 -A1 -B2 -O2,4 -E2,1 -s200 -z200 -N50 --max-qlen 10000000 --min-occ-floor=100 --paf-no-hit ${QRY} ${QRY} > $(basename ${QRY} .fasta)_self_align.paf
+```
+-t <INT> can be set to the number of cores allocated for the job. In SLURM the variable is SLURM_CPUS_PER_TASK and in SGE the variable is NSLOTS.
+We also recommend testing different options to see if you get better results. HapSolo also runs faster using MiniMap2 paf files.
+
 # Blat all-by-all alignment 
 Here we provide scripts for running Blat on an HPC using SGE or SLURM job schedulers.
 To preprocess, you should have run the qsub_preprocess.sh or the sbatch_preprocess.sh scripts above. These files only require that you assign your FASTA file name to the REF variable. Once the preprocessing step has been completed a jobfile.txt file, a new FASTA file containing _new.fasta appended to the name and a contigs directory containing FASTA files for each contig will have been created. This step does require quite a bit of memory, so it is recommended that you consider this prior to running this step.
