@@ -75,6 +75,7 @@ myMinContigSize = 1000
 busco2contigdict = dict()
 contigs2buscodict = dict()
 pythonversion = sys.version_info[0]
+myMinPID = myMinQPctMin = myMinQRPctMin = 0.6
 
 if pythonversion != 2:
     print("Please run the correct version of Python. You are currently running Python " + str(pythonversion))
@@ -323,27 +324,27 @@ def hillclimbing(job_args):
         # forward stepping of GD
         if (myPID > 1.0 and myQPctMin > 1.0 and CalculateInverseProportion(myQRPctMin) > 1.0) or (i >= maxzeros and sum(costfxndelta[i-maxzeros:i+1]) == 0):
             # reassign myQ's
-            myPID = uniform(0.6, 1.0)
-            myQPctMin = uniform(0.6, 1)
-            myQRPctMin = uniform(0.6, 1)
+            myPID = uniform(myMinPID, 1.0)
+            myQPctMin = uniform(myMinQPctMin, 1)
+            myQRPctMin = uniform(myMinQRPctMin, 1)
         elif myQPctMin > 1.0 and CalculateInverseProportion(myQRPctMin) > 1.0:
-            myQPctMin = uniform(0.6, 1)
-            myQRPctMin = uniform(0.6, 1)
+            myQPctMin = uniform(myMinQPctMin, 1)
+            myQRPctMin = uniform(myMinQRPctMin, 1)
         elif myPID > 1.0 and myQPctMin > 1.0:
-            myPID = uniform(0.6, 1.0)
-            myQPctMin = uniform(0.6, 1)
+            myPID = uniform(myMinPID, 1.0)
+            myQPctMin = uniform(myMinQPctMin, 1)
         elif myPID > 1.0 and myQRPctMin > 1.0:
-            myPID = uniform(0.6, 1.0)
-            myQRPctMin = uniform(0.6, 1)
+            myPID = uniform(myMinPID, 1.0)
+            myQRPctMin = uniform(myMinQRPctMin, 1)
         elif myPID > 1.0:
             # reassign %ID
-            myPID = uniform(0.6, 1.0)
+            myPID = uniform(myMinPID, 1.0)
         elif myQPctMin > 1.0:
             # reassign myQPctMin
-            myQPctMin = uniform(0.6, 1)
+            myQPctMin = uniform(myMinQPctMin, 1)
         elif myQRPctMin > 1.0:
             # reassign myQRPctMin
-            myQRPctMin = uniform(0.6, 1)
+            myQRPctMin = uniform(myMinQRPctMin, 1)
         else:
             mystepindex = randint(0, len(mysteps)-1)
             mysteps[mystepindex] = stepsize
@@ -580,7 +581,7 @@ if __name__ == '__main__':
     # execute Hill Climbing here.
     job_args = list()
     if threads == 1:
-        job_args = [0, iterations, resolution, uniform(0.0, 1), uniform(0.0, 1), uniform(0.0, 1)]
+        job_args = [0, iterations, resolution, uniform(myMinPID, 1), uniform(myMinQPctMin, 1), uniform(myMinQRPctMin, 1)]
         mylist = hillclimbing(job_args)
         mybestnscoreslist = mylist[0]
         for i in range(0, bestnscores):
@@ -606,7 +607,7 @@ if __name__ == '__main__':
             fout.close()
     elif threads > 1:
         for i in range(threads):
-            job_args.append([i, iterations, resolution, uniform(0.0, 1), uniform(0.0, 1), uniform(0.0, 1)])
+            job_args.append([i, iterations, resolution, uniform(myMinPID, 1), uniform(myMinQPctMin, 1), uniform(myMinQRPctMin, 1)])
         pool = mp.Pool(processes=threads)
         mylist = pool.map(hillclimbing, job_args)
         mybestnscoreslist = list()
