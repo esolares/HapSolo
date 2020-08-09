@@ -480,10 +480,18 @@ def CreateMM2AlignmentDataStructure(alignmentfile):
             print('Invalid PAF format. Line Number: ' + str(lineNum + 1) + ' contains more than 18 fields. ' + str(
                 len(myLines[lineNum])) + ' fields to be exact! Please correct.')
     # pandas time!
-    mypddf = pd.DataFrame(myLines[:],
+    if len(myLines[lineNum]) == 18:
+        mypddf = pd.DataFrame(myLines[:],
                           columns=['qName', 'qSize', 'qStart', 'qEnd', 'strand', 'tName', 'tSize', 'tStart', 'tEnd',
                                    'matches', 'gaps+matches', 'mappingqv', 'alignmenttype', 'numofminschain',
                                    'chainingscore', 'secondchainingscore', 'approxdivergence', 'lqrhrepseeds'])
+    elif len(myLines[lineNum]) == 17:
+        mypddf = pd.DataFrame(myLines[:],
+                          columns=['qName', 'qSize', 'qStart', 'qEnd', 'strand', 'tName', 'tSize', 'tStart', 'tEnd',
+                                   'matches', 'gaps+matches', 'mappingqv', 'alignmenttype', 'numofminschain',
+                                   'chainingscore', 'secondchainingscore', 'approxdivergence'])
+    else:
+        print('Error in PAF file. expected 17 or 18 columns but received ' + str(len(myLines[lineNum])) + ' columns.')
     myLines = list() #clear this var to release RAM
     mypddf['qStart'] = pd.to_numeric(mypddf['qStart'])
     mypddf['qEnd'] = pd.to_numeric(mypddf['qEnd'])
