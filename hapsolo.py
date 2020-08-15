@@ -266,10 +266,10 @@ def ReduceASM(myPID, myQPctMin, myQRPctMin):
     myQRPctMax = CalculateInverseProportion(myQRPctMin)
     temppd0 = mypddf[mypddf['PID'] >= myPID]
     temppd1 = temppd0[temppd0['QPct'] >= myQPctMin]
-    temppd0 = temppd1[temppd1['qSize'] >= myMinContigSize]
-    temppd1 = temppd0[temppd0['QRAlignLenPct'] >= myQRPctMin]
-    temppd0 = temppd1[temppd1['QRAlignLenPct'] <= myQRPctMax]
-    goodcontigset = set(mypddf['qName']) - set(temppd0['qName'])
+    #temppd0 = temppd1[temppd1['qSize'] >= myMinContigSize]
+    temppd0 = temppd1[temppd1['QRAlignLenPct'] >= myQRPctMin]
+    temppd1 = temppd0[temppd0['QRAlignLenPct'] <= myQRPctMax]
+    goodcontigset = set(mypddf['qName']) - set(temppd1['qName'])
     return goodcontigset
 
 
@@ -540,6 +540,7 @@ def CreateMM2AlignmentDataStructure(alignmentfile):
     mypddf = mypddf[mypddf['qName'] != mypddf['tName']]
     lenaftermask = len(mypddf)
     print(str(lenbeforemask - lenaftermask) + ' alignments Purged where query = reference')
+    mypddf = mypddf[mypddf['qSize'] >= myMinContigSize]
     return mypddf[['qName', 'qSize', 'QPct', 'PID', 'QRAlignLenPct']]
 
 
