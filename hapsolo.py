@@ -79,9 +79,9 @@ if myMinQPctMin == None:
     myMinQPctMin = 0.2
 if myMinQRPctMin == None:
     myMinQRPctMin = 0.2
-elif myMinQRPctMin < 0.05:
-    myMinQRPctMin = 0.05
-    print('-R/--minQR set to a value less than 0.05. using 0.05 instead.')
+elif myMinQRPctMin < 0.02:
+    myMinQRPctMin = 0.02
+    print('-R/--minQR set to a value less than 0.02. using 0.02 instead.')
 # alignmentfile = 'chardonnay_quiv2x_qm3x_fu_qm2xfu_pilon.self_blat.psl'
 # myasmFileName = 'chardonnay_quiv2x_qm3x_fu_qm2xfu_pilon.fasta'
 
@@ -424,7 +424,7 @@ def CalculatePctAlign(myAlignLen, myTotalLen):
 
 
 def CalculateInverseProportion(myPct):
-    if myPct < 0.05:
+    if myPct < 0.02:
         inversePct = myPct
     else:
         inversePct = exp(-1.0 * log(myPct, 2))
