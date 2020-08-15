@@ -25,6 +25,9 @@ parser.add_argument('-D', '--thetaD', help='Weight for duplicate BUSCOs in linea
 parser.add_argument('-F', '--thetaF', help='Weight for fragmented BUSCOs in linear fxn. Default = 0.0', type=int, required=False)
 parser.add_argument('-M', '--thetaM', help='Weight for missing BUSCOs in linear fxn. Default = 1.0', type=int, required=False)
 # parser.add_argument('-T', '--thetaS', help='Weight for single BUSCOs in linear fxn. Default = 1.0', type=int, required=False)
+parser.add_argument('-P', '--minPID', help='Restrict values of PID to be >= the value set here. Default = 0.2', type=int, required=False)
+parser.add_argument('-Q', '--minQ', help='Restrict values of Q to be >= the value set here. Default = 0.2', type=int, required=False)
+parser.add_argument('-R', '--minQR', help='Restrict values of QR to be >= the value set here. Cannot be 0. Default = 0.2', type=int, required=False)
 
 args = parser.parse_args()
 
@@ -43,6 +46,10 @@ thetaD = args.thetaD
 thetaM = args.thetaM
 thetaF = args.thetaF
 # thetaT = args.thetaT
+myMinPID = args.minPID
+myMinQPctMin = args.minQ
+myMinQRPctMin = args.minQR
+
 
 #if alignmentfile == None:
 #    print('Please assign an alignment file. Either by using Minimap2 or Blat/PBlat')
@@ -66,7 +73,15 @@ if thetaF == None:
     thetaF = 0.0
 # if thetaT == None:
     # thetaT = 0.0
-
+if myMinPID == None:
+    myMinPID = 0.2
+if myMinQPctMin == None:
+    myMinQPctMin = 0.2
+if myMinQRPctMin == None:
+    myMinQRPctMin = 0.2
+elif myMinQRPctMin < 0.05:
+    myMinQRPctMin = 0.05
+    print('-R/--minQR set to a value less than 0.05. using 0.05 instead.')
 # alignmentfile = 'chardonnay_quiv2x_qm3x_fu_qm2xfu_pilon.self_blat.psl'
 # myasmFileName = 'chardonnay_quiv2x_qm3x_fu_qm2xfu_pilon.fasta'
 
@@ -83,7 +98,6 @@ myMinContigSize = 1000
 busco2contigdict = dict()
 contigs2buscodict = dict()
 pythonversion = sys.version_info[0]
-myMinPID = myMinQPctMin = myMinQRPctMin = 0.60
 
 if pythonversion != 2:
     print("Please run the correct version of Python. You are currently running Python " + str(pythonversion))
@@ -330,12 +344,12 @@ def hillclimbing(job_args):
         if costfxndelta[i] <= resolution and costfxndelta[i] > 0.0:
             break
         # forward stepping of GD
-        if (myPID > 1.0 and myQPctMin > 1.0 and CalculateInverseProportion(myQRPctMin) > 1.0) or (i >= maxzeros and sum(costfxndelta[i-maxzeros:i+1]) == 0):
+        if (myPID > 1.0 and myQPctMin > 1.0 and myQRPctMin > 1.0) or (i >= maxzeros and sum(costfxndelta[i-maxzeros:i+1]) == 0):
             # reassign myQ's
             myPID = uniform(myMinPID, 1.0)
             myQPctMin = uniform(myMinQPctMin, 1)
             myQRPctMin = uniform(myMinQRPctMin, 1)
-        elif myQPctMin > 1.0 and CalculateInverseProportion(myQRPctMin) > 1.0:
+        elif myQPctMin > 1.0 and myQRPctMin > 1.0:
             myQPctMin = uniform(myMinQPctMin, 1)
             myQRPctMin = uniform(myMinQRPctMin, 1)
         elif myPID > 1.0 and myQPctMin > 1.0:
@@ -410,7 +424,10 @@ def CalculatePctAlign(myAlignLen, myTotalLen):
 
 
 def CalculateInverseProportion(myPct):
-    inversePct = exp(-1.0 * log(myPct, 2))
+    if myPct < 0.05:
+        inversePct = myPct
+    else:
+        inversePct = exp(-1.0 * log(myPct, 2))
     return inversePct
 
 
