@@ -553,8 +553,16 @@ def CreateMM2AlignmentDataStructure(alignmentfile):
     mypddf = mypddf[mypddf['qName'] != mypddf['tName']]
     lenaftermask = len(mypddf)
     print(str(lenbeforemask - lenaftermask) + ' alignments Purged where query = reference')
+    lenbeforemask = len(mypddf)
+    mypddf = mypddf[['qName', 'qSize', 'QPct', 'PID', 'QRAlignLenPct']]
     mypddf = mypddf[mypddf['qSize'] >= myMinContigSize]
-    return mypddf[['qName', 'qSize', 'QPct', 'PID', 'QRAlignLenPct']]
+    mypddf = mypddf[mypddf['PID'] >= myMinPID]
+    mypddf = mypddf[mypddf['QPct'] >= myMinQPctMin]
+    mypddf = mypddf[mypddf['QRAlignLenPct'] >= myMinQRPctMin]
+    mypddf = mypddf[mypddf['QRAlignLenPct'] <= CalculateInverseProportion(myMinQRPctMin)]
+    lenaftermask = len(mypddf)
+    print(str(lenbeforemask - lenaftermask) + ' alignments Purged due to Search Space constraints')
+    return mypddf
 
 
 # Create a dictionary based on the alignment file
@@ -641,7 +649,16 @@ def CreateBlatAlignmentDataStruture(alignmentfile):
     mypddf = mypddf[mypddf['qName'] != mypddf['tName']]
     lenaftermask = len(mypddf)
     print(str(lenbeforemask - lenaftermask) + ' alignments Purged where query = reference')
-    return mypddf[['qName', 'qSize', 'QPct', 'PID', 'QRAlignLenPct']]
+    lenbeforemask = len(mypddf)
+    mypddf = mypddf[['qName', 'qSize', 'QPct', 'PID', 'QRAlignLenPct']]
+    mypddf = mypddf[mypddf['qSize'] >= myMinContigSize]
+    mypddf = mypddf[mypddf['PID'] >= myMinPID]
+    mypddf = mypddf[mypddf['QPct'] >= myMinQPctMin]
+    mypddf = mypddf[mypddf['QRAlignLenPct'] >= myMinQRPctMin]
+    mypddf = mypddf[mypddf['QRAlignLenPct'] <= CalculateInverseProportion(myMinQRPctMin)]
+    lenaftermask = len(mypddf)
+    print(str(lenbeforemask - lenaftermask) + ' alignments Purged due to Search Space constraints')
+    return mypddf
 
 
 def myLinearFxn(mbusco, sbusco, dbusco, fbusco, cbusco):
