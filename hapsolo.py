@@ -173,12 +173,17 @@ def importBuscos(buscofileloc):
     # should start with contigs? or buscoids? maybe both
     for file in mybuscofiles:
         mylines = list()
+        mylinecounter = 0
         for line in open(file):
             if line[0] != '#':
                 mylines.append(line.strip().split())
+            elif line[0] == '#' and mylinecounter < 4:
+                mylinecounter+=1
+                if mylinecounter == 3:
+                    contigname = line.split()[8].split('/')[-1].replace('.fasta','')
         for i in range(0, len(mylines)):
             buscoid = mylines[i][0]
-            contigname = file.split('/')[-1].replace('full_table_', '').split('_new')[0]
+            #contigname = file.split('/')[-1].replace('full_table_', '').split('_new')[0]
             buscotype = mylines[i][1][0]
             if buscotype != 'M':
                 busco2contigdict[buscoid][buscotype].append(contigname)
