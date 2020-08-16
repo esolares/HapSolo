@@ -178,7 +178,15 @@ def importBuscos(buscofileloc):
             buscoids.add(line.strip().split()[0])
     # propogate contig names into a set
     for i in range(0, len(mybuscofiles)):
-        contignames.add(mybuscofiles[i].split('/')[-1].replace('full_table_', '').split('_new')[0])
+        mylinecounter = 0
+        for line in open(mybuscofiles[i]):
+            mylinecounter+=1
+            if line[0] == '#' and mylinecounter < 4:
+                if mylinecounter == 3:
+                    contignames.add(line.split()[8].split('/')[-1].replace('.fasta',''))
+            elif mylinecounter > 3:
+                break
+        #contignames.add(mybuscofiles[i].split('/')[-1].replace('full_table_', '').split('_new')[0])
     if len(contignames) != len(set(contignames)):
         print('duplicate contig names exist. Please fix contig names so that no duplicates exist and rerun HapSolo')
         quit(1)
