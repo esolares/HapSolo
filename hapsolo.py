@@ -498,31 +498,20 @@ def CreateMM2AlignmentDataStructure(alignmentfile):
         fin = gzip.open(alignmentfile, 'r')
     elif fileext == 'paf':
         fin = open(alignmentfile, 'r')
-    myLines = fin.readlines()
-    fin.close()
-    for lineNum in range(0, len(myLines)):
-        myLines[lineNum] = myLines[lineNum].strip().split('\t')
-    if len(myLines) == 0:
+    myline = fin.readline()
+    if len(myline) <= 3:
         print('Empty PAF file. Please fix and rerun')
         quit(1)
-    for lineNum in range(0, len(myLines)):
-        if len(myLines[lineNum]) > 18:
-            print('Invalid PAF format. Line Number: ' + str(lineNum + 1) + ' contains more than 18 fields. ' + str(
-                len(myLines[lineNum])) + ' fields to be exact! Please correct.')
+    myline = myline.strip().split('\t')
+    if len(myline) > 18:
+         print('Invalid PAF format. Contains more than 18 fields. ' + str(
+             len(myline)) + ' fields to be exact! Please correct.')
+    elif len(myline) != 17 and len(myline) != 18:
+        print('Error in PAF file. expected 17 or 18 columns but received ' + str(len(myline)) + ' columns.')
+    fin.close()
     # pandas time!
-    if len(myLines[lineNum]) == 18:
-        mypddf = pd.DataFrame(myLines[:],
-                          columns=['qName', 'qSize', 'qStart', 'qEnd', 'strand', 'tName', 'tSize', 'tStart', 'tEnd',
-                                   'matches', 'gaps+matches', 'mappingqv', 'alignmenttype', 'numofminschain',
-                                   'chainingscore', 'secondchainingscore', 'approxdivergence', 'lqrhrepseeds'])
-    elif len(myLines[lineNum]) == 17:
-        mypddf = pd.DataFrame(myLines[:],
-                          columns=['qName', 'qSize', 'qStart', 'qEnd', 'strand', 'tName', 'tSize', 'tStart', 'tEnd',
-                                   'matches', 'gaps+matches', 'mappingqv', 'alignmenttype', 'numofminschain',
-                                   'chainingscore', 'secondchainingscore', 'approxdivergence'])
-    else:
-        print('Error in PAF file. expected 17 or 18 columns but received ' + str(len(myLines[lineNum])) + ' columns.')
-    myLines = list() #clear this var to release RAM
+    mypddf = pd.read_csv(alignmentfile, sep='\t', header=None, usecols=[0,1,2,3,5,6,7,8,9,10],
+                          names=['qName', 'qSize', 'qStart', 'qEnd', 'tName', 'tSize', 'tStart', 'tEnd', 'matches', 'gaps+matches'])
     mypddf['qStart'] = pd.to_numeric(mypddf['qStart'])
     mypddf['qEnd'] = pd.to_numeric(mypddf['qEnd'])
     mypddf['tStart'] = pd.to_numeric(mypddf['tStart'])
