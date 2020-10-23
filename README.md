@@ -8,17 +8,14 @@ HapSolo is compatible with Python 2.7 and requires the PANDAS package be install
 To do this please install conda and run:
 ```
 conda create --name HapSolo python=2.7
+conda activate HapSolo
 conda install -c anaconda pandas
-git clone https://github.com/esolares/HapSolo.git
-cd HapSolo
-export PATH=$(pwd):$PATH
 ```
 ###### Note: HapSolo has been tested and run on BUSCO V3 and Blat V36. minimap2 support to come soon.
 # Installation
 ```
-https://github.com/esolares/HapSolo.git
+git clone https://github.com/esolares/HapSolo.git
 cd HapSolo
-HAPSOLO=$(pwd)
 ```
 Make sure to export your path to your ENV variables by doing the following and adding this line to all your scripts that run preprocessfasta.py or hapsolo.py
 ```
