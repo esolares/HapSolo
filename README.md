@@ -16,6 +16,7 @@ conda install -c anaconda pandas
 ```
 git clone https://github.com/esolares/HapSolo.git
 cd HapSolo
+HAPSOLO=$(pwd)
 ```
 Make sure to export your path to your ENV variables by doing the following and adding this line to all your scripts that run preprocessfasta.py or hapsolo.py
 ```
