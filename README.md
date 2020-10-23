@@ -3,11 +3,15 @@ An optimization approach for removing secondary haplotigs during diploid genome 
 
 # Installation requirements
 
-HapSolo is compatible with Python 2.7 and requires the PANDAS package be installed.
+HapSolo is compatible with Python 2.7 and requires the PANDAS package be installed. There is support for Python 3, but Python 2.7 runs faster.
 
-To do this run:
+To do this please install conda and run:
 ```
-pip install pandas
+conda create --name HapSolo python=2.7
+conda install -c anaconda pandas
+git clone https://github.com/esolares/HapSolo.git
+cd HapSolo
+export PATH=$(pwd):$PATH
 ```
 ###### Note: HapSolo has been tested and run on BUSCO V3 and Blat V36. minimap2 support to come soon.
 # Installation
