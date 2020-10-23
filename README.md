@@ -57,8 +57,10 @@ HapSolo requires three arguments: Your preprocessed contig assembly file, your B
 
 The run syntax is as follows:
 ```
-hapsolo.py -i YOURPREPROCESSEDCONTIGASSEMBLY.fasta -p YOURPSLFILE.psl -b YOURBUSCOOUTPUTDIRECTORY
-hapsolo.py -i contigassembly_new.fasta -p self_alignment.psl -b ./contigs/busco/
+hapsolo.py -i YOURPREPROCESSEDCONTIGASSEMBLY.fasta --psl YOURPSLFILE.psl -b YOURBUSCOOUTPUTDIRECTORY
+or
+hapsolo.py -i YOURPREPROCESSEDCONTIGASSEMBLY.fasta --paf YOURPAFFILE.paf -b YOURBUSCOOUTPUTDIRECTORY
+hapsolo.py -i contigassembly_new.fasta --paf/psl self_alignment.file -b ./contigs/busco/
 
 usage: hapsolo.py [-h] -i INPUT (-p PSL | -a PAF) -b BUSCOS [-m MAXZEROS] [-t THREADS]
                   [-n NITERATIONS] [-B BESTN] [-S THETAS] [-D THETAD]
