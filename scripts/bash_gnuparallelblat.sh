@@ -15,6 +15,6 @@ JOBFILE=jobfile.txt
 
 ls *.fa | sed 's/.fa//' > ${JOBFILE}
 
-cat ${JOBFILE} | parallel -j $CORES echo {}.fa {}.2bit
+parallel -j $CORES -k faToTwoBit {}.fa {}.2bit ::: $(cat ${JOBFILE})
 
-cat ${JOBFILE} | parallel -j $CORES echo $REF {}.2bit {}.psl
+parallel -j $CORES -k blat $REF {}.2bit job{#}_{}.psl ::: $(cat ${JOBFILE})
