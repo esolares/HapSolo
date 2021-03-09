@@ -11,7 +11,7 @@ conda create --name HapSolo python=2.7
 conda activate HapSolo
 conda install -c anaconda pandas
 ```
-###### Note: HapSolo has been tested and run on BUSCO V3 and Blat V36. minimap2 support to come soon.
+###### Note: HapSolo has been tested and run on BUSCO V3 and Blat V36 and minimap2. We do not recommend using newer versions of BUSCO as it will lead to miss-classification of BUSCO's.
 # Installation
 ```
 git clone https://github.com/esolares/HapSolo.git
