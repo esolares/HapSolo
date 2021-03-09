@@ -25,5 +25,5 @@ faToTwoBit ${REF} $(basename ${REF} .fasta).2bit
 python preprocessfasta.py -i ${REF}
 
 JOBFILE=jobfile.txt
-#ls contigs/*.fasta > ${JOBFILE}
+ls contigs/*.fasta > ${JOBFILE}
 wait
