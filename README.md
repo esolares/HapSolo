@@ -153,3 +153,23 @@ We will use the output of the last line and enter it into the job array of eithe
 ###### Note: For more information on how to run and configure array jobs, please contact your IT help desk or refer the your job scheduler's manual.
 Next you wil need to make sure you have the proper lineage and species selected for your particular sample. You can look this up at https://busco.ezlab.org/ and http://bioinf.uni-greifswald.de/augustus/ respectively. Once these changes have been made to your sbatch_busco.sh or qsub_busco.sh script, you can submit them to your HPC queue.
 
+
+# run HapSolo
+Once you have concatenated all your psl output files or finished minimap2, and finished your BUSCO3 run. You can run HapSolo. Currently HapSolo does not accept absolute paths. This is a known bug and wil be fixed shortly. If your current working directy is:
+```
+/nfsmount/mydir/hapsolowd
+```
+and your input files shoud look like this:
+```
+/nfsmount/mydir/hapsolowd/myalignmentfile
+/nfsmount/mydir/hapsolowd/myassembly.fasta
+/nfsmount/mydir/hapsolowd/contigs/busco
+```
+then you should run HapSolo as the following:
+```
+hapsolo.py -i myassembly.fasta --psl myalignmentfile.psl -b contigs/busco
+```
+or
+```
+hapsolo.py -i myassembly.fasta --paf myalignmentfile.paf -b contigs/busco
+```
