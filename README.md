@@ -142,10 +142,11 @@ This script will look for all job*.PSL files that have been created by the paral
 ###### Note: You could also use the parallel version of Blat, pblat available here https://github.com/icebert/pblat
 
 # BUSCO run for each contig fasta file
+Here we need to extract contigs larger than 10Mb. Make sure to run this after the initial preprocess.py step mentioned above.
 To do this we recommend you run the following:
 ```
-cd contigs
 bash_buscopreprocess.sh
+cd contigs
 wc -l buscojobfile.txt
 ```
 We will use the output of the last line and enter it into the job array of either the sbatch or qsub script. This should look like this: 1-N, where N is the number returned by wc -l. You will also need to set the number of cores to run for each array job. 
