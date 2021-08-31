@@ -786,6 +786,16 @@ def WriteNewAssembly(myasmFileName, newASMFileName, myGoodContigsSet):
         os.makedirs(mydirectory)
     fout = open(outfile, 'w')
     # contigsDict[key] = [contiglen,headerpos,startseqpos,endseqpos]
+    if (myGoodContigsSet - set(myContigsDict.keys())) != 0:
+        print('Error: HapSolo has two seperate set of contigs! Please submit bug report and sent bugreport.log file.')
+        foutlogfile = open('bugreport.log','w')
+        for key in myContigsDict.keys():
+            foutlogfile.write(str(key) + ',' + str(myContigsDict[key][0]) + ',' + str(myContigsDict[key][1]) + ',' + str(myContigsDict[key][2]) + ',' + str(myContigsDict[key][3]) + '\n')
+        foutlogfile.write('Begin good contig set:\n')
+        for contig in myGoodContigsSet:
+            foutlogfile.write(str(contig) + ',')
+        foutlogfile.close()
+        quit(1)
     for contig in myGoodContigsSet:
         myContigPositionsList = myContigsDict[contig]
         fin.seek(myContigPositionsList[1])  # extract headerpos
