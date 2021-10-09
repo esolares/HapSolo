@@ -2,8 +2,19 @@
 
 An optimization approach for removing secondary haplotigs during diploid genome assembly and scaffolding.
 
-# Installation requirements
+# Singularity Installation Requirements
+# RECOMMENDED
+Our singularity image of HapSolo contains all required software including BUSCO, and Augustus. Please skip the local install if you are able to pull the Singularity image.
 
+```
+# Pull with Singularity
+singularity pull --arch amd64 library://esolares/default/hapsolo_busco3:0.01
+# Pull by unique ID (reproducible even if tags change)
+singularity pull library://esolares/default/hapsolo_busco3:sha256.5070a5b9119b11d7d50da0693c0c5185051a0e690e868a27367f17364ddb31be
+```
+
+# Local Installation Requirements
+## Please try to use the singularity image instead as there have been issues with the conda version of BUSCO.
 HapSolo is compatible with Python 2.7 and requires the PANDAS package be installed. There is support for Python 3, but Python 2.7 runs faster.
 
 To do this please install conda and run:
