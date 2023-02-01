@@ -5,7 +5,8 @@ An optimization approach for removing secondary haplotigs during diploid genome 
 # Singularity Installation Requirements
 # RECOMMENDED
 Our singularity image of HapSolo contains all required software including BUSCO, and Augustus. Please skip the local install if you are able to pull the Singularity image.
-
+Running singularity will not require running conda and is the best way to get HapSolo and BUSCO3 working.
+### Downloading the image (only do once)
 ```
 # Pull with Singularity
 singularity pull --arch amd64 library://esolares/default/hapsolo_busco3:0.01
@@ -13,7 +14,52 @@ singularity pull --arch amd64 library://esolares/default/hapsolo_busco3:0.01
 singularity pull library://esolares/default/hapsolo_busco3:sha256.5070a5b9119b11d7d50da0693c0c5185051a0e690e868a27367f17364ddb31be
 ```
 
-# Local Installation Requirements
+### Singularity RUN COMMANDS:
+This section will be required for running HapSolo and BUSCO3 using singularity initiate singularity and mount current working directory
+<br>Augustus 3.2.2 Config directory Link: [config.tar.gz](https://drive.google.com/file/d/12tgvIXRbHtovWWHdiKlLDMTKyLvk-f7_/view?usp=sharing)
+<br>Note: You will need to download this then upload to your work directory saved in HOSTDIR. to see this echo $HOSTDIR
+```
+
+## MOUNDIR is the mounting point within singulariy
+MOUNTDIR=/data
+## HOSTDIR is your current working directory with all your files
+## Note: You will need the Augustus config folder in your work directory as well as the contigs folder and the odb9 folder for your taxa
+HOSTDIR=$(pwd)
+
+# You will need to download the Augustus 3.2.2 config directory. I have provided a link from gdrive above.
+# Note: You will need to download this then upload to your work directory saved in HOSTDIR. to see this echo $HOSTDIR
+
+# I will work on getting this so you can execute curl or wget. For now you will need to download using a browser and upload via scp or winscp or other method
+# once it is upload you will need to run: 
+tar xzvf config.tar.gz
+
+# Here we will spin up the singularity instance. Please make sure you are running all these commands in your compute node
+# Note: Spinning up the instance will keep this loaded on the server until you execute the singularity stop instance://hapsolo command
+singularity instance start --bind ${HOSTDIR}:${MOUNTDIR} hapsolo_busco3_0.01.sif hapsolo
+
+# Here we will test BUSCO3 and HapSolo as well as ls your current working directory
+singularity exec instance://hapsolo BUSCO.py --help
+singularity exec instance://hapsolo hapsolo.py --help
+singularity exec instance://hapsolo ls /data/
+# you should now see all your files. This means that singularity has access to all your files from the instance. If it does not match please check your HOSTDIR 
+# and make sure you are mounting your HOSTDIR to your MOUNTDIR as noted above.
+# CONGRATULATIONS! You know have singularity running.
+
+# Here is an example BUSCO3 command
+singularity exec instance://hapsolo BUSCO.py -c 24 -m geno -i /data/contigs/tig00000002.fasta -l /data/embryophyta_odb9 -sp arabidopsis -t ./tmp -o testbusco
+
+# Please make sure to append "singularity exec instance://hapsolo" to any command you see in this documentation or scripts to get them to work with singularity. 
+# Also please make sure you have hapsolo running as an instance. You can check by running the following:
+singularity instance list
+
+# To stop your instance you can run the following
+singularity instance stop hapsolo
+
+# Please submit bug reports if you have any issues. Sometimes google will not notify me and you can reach me via my website: edwinsolares.com or on twitter: @edwinsolares10
+# If you are having errors with your odb9, make sure you are not linking it (ln -s) and have a hard copy in your working directory i.e. ${HOSTDIR}/embryophyta_odb9
+```
+
+# Local Installation Requirements (Local install not required if you are running singularity)
 ## Please try to use the singularity image instead as there have been issues with the conda version of BUSCO.
 HapSolo is compatible with Python 2.7 and requires the PANDAS package be installed. There is support for Python 3, but Python 2.7 runs faster.
 
