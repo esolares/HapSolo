@@ -118,6 +118,8 @@ smallcontigset = set()
 busco2contigdict = dict()
 contigs2buscodict = dict()
 pythonversion = sys.version_info[0]
+# special_chars are !@#$%^&*()-=+,./\[{}]|;:'><?
+special_chars = '!@#$%^&*()-=+,./\\[{]}|;:"\'><?'
 
 if pythonversion != 2:
     print("Please run the correct version of Python. You are currently running Python " + str(pythonversion))
@@ -143,8 +145,18 @@ def CalculateContigSizes(asmFileName):
         line = fin.readline().replace('\n', '')
         count = count + 1
         if line[0:1] == '>':
+            header = line[1:]
+            special_char = False
+            for char in header:
+                if char in special_chars:
+                    special_char = True
+                    break
             # print('found seq_name ' + line)
-            seqName = line.split(" ")[0].replace('>', '').replace('/', '_')
+            if len(header.split(" ")) > 1 or special_char:
+                print('Spaces found in contig headers. Please remove spaces from contig names before proceeding with any analysis. Spaces, -"s, //"s and other special characters are not allowed in contig names.')
+                print('Special characters except _ cause isues in aligners and BUSCO analysis. This will cause HapSolo to fail, as .')
+                quit(1)
+            seqName = header.split(" ")[0].replace('/', '_')
             # seqName = line.split("_")[0]
             lastPos = startPos = fin.tell()
             line = fin.readline().replace('\n', '')
@@ -789,11 +801,18 @@ def WriteNewAssembly(myasmFileName, newASMFileName, myGoodContigsSet):
     if (myGoodContigsSet - set(myContigsDict.keys())) != 0:
         print('Error: HapSolo has two seperate set of contigs! Please submit bug report and sent bugreport.log file.')
         foutlogfile = open('bugreport.log','w')
+        foutlogfile.write('Begin ContigsDict kyes:\n')
         for key in myContigsDict.keys():
-            foutlogfile.write(str(key) + ',' + str(myContigsDict[key][0]) + ',' + str(myContigsDict[key][1]) + ',' + str(myContigsDict[key][2]) + ',' + str(myContigsDict[key][3]) + '\n')
+            foutlogfile.write(str(key)) #  + ',' + str(myContigsDict[key][0]) + ',' + str(myContigsDict[key][1]) + ',' + str(myContigsDict[key][2]) + ',' + str(myContigsDict[key][3]) + '\n')
+        foutlogfile.write('\nEnd ContigsDict keys\n\n')
         foutlogfile.write('Begin good contig set:\n')
         for contig in myGoodContigsSet:
             foutlogfile.write(str(contig) + ',')
+        foutlogfile.write('\nEnd good contig set\n\n')
+        foutlogfile.write('Begin non-matching contig set:\n')
+        for contig in myGoodContigsSet - set(myContigsDict.keys()):
+            foutlogfile.write(str(contig) + ',')
+        foutlogfile.write('\nEnd non-matching contig set\n\n')
         foutlogfile.close()
         quit(1)
     for contig in myGoodContigsSet:
