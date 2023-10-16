@@ -336,7 +336,7 @@ def hillclimbing(job_args):
     costfxn = [0.0 for ii in range(numofiterations)]
     costfxndelta = [0.0 for ii in range(numofiterations)]
     # 0. Calculate scores for original assembly
-    allmycontigs = qrycontigset.union(missingrefcontigset) - smallcontigset
+    allmycontigs = qrycontigset.union(missingrefcontigset) - smallcontigset - {''}
     allcontigsbuscoscore = calculateBuscos(allmycontigs, busco2contigdict, contigs2buscodict)
     allsinglebuscos = allcontigsbuscoscore['S']
     allmissingbuscos = allcontigsbuscoscore['M']
@@ -349,7 +349,7 @@ def hillclimbing(job_args):
     else:
         oldasmscorefxn = myLinearFxn(allmissingbuscos, allsinglebuscos, alldupebuscos, allfragbuscos, totalbuscos)
     bestcontigset = allmycontigs.copy()
-    bestpurgedset = allcontigsset - bestcontigset
+    bestpurgedset = allcontigsset - bestcontigset  - {''}
     # bestscore = oldasmscorefxn
     bestbuscos = allcontigsbuscoscore.copy()
     # use fxn uniquepriorityqueue(pqlist, myvalues) for returning a sorted unique priority list
@@ -361,8 +361,8 @@ def hillclimbing(job_args):
     # 1. Make a step
     # 2. Calculate new assembly
     mygoodcontigs = ReduceASM(myPID, myQPctMin, myQRPctMin)
-    mygoodcontigs = mygoodcontigs.union(missingrefcontigset) - smallcontigset
-    purgedcontigs = allcontigsset - mygoodcontigs
+    mygoodcontigs = mygoodcontigs.union(missingrefcontigset) - smallcontigset - {''}
+    purgedcontigs = allcontigsset - mygoodcontigs - {''}
     numofcontigs = len(mygoodcontigs)
     # 3. Calculate new busco scores
     mygoodcontigsbuscoscore = calculateBuscos(mygoodcontigs, busco2contigdict, contigs2buscodict)
@@ -438,8 +438,8 @@ def hillclimbing(job_args):
             myQRPctMin = myQRPctMin + mysteps[2]
         mygoodcontigs = ReduceASM(myPID, myQPctMin, myQRPctMin)
         # include missing contigs > 10Mb
-        mygoodcontigs = mygoodcontigs.union(missingrefcontigset) - smallcontigset
-        purgedcontigs = allcontigsset - mygoodcontigs
+        mygoodcontigs = mygoodcontigs.union(missingrefcontigset) - smallcontigset - {''}
+        purgedcontigs = allcontigsset - mygoodcontigs - {''}
         numofcontigs = len(mygoodcontigs)
         mygoodcontigsbuscoscore = calculateBuscos(mygoodcontigs, busco2contigdict, contigs2buscodict)
         newsinglebuscos = mygoodcontigsbuscoscore['S']
@@ -797,6 +797,7 @@ def WriteNewAssembly(myasmFileName, newASMFileName, myGoodContigsSet):
     if not os.path.exists(mydirectory):
         os.makedirs(mydirectory)
     fout = open(outfile, 'w')
+    myGoodContigsSet = myGoodContigsSet - {''}
     # contigsDict[key] = [contiglen,headerpos,startseqpos,endseqpos]
     if (myGoodContigsSet - set(myContigsDict.keys())) != 0:
         print('Error: HapSolo has two seperate set of contigs! Please submit bug report and sent bugreport.log file.')
