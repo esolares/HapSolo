@@ -799,7 +799,7 @@ def WriteNewAssembly(myasmFileName, newASMFileName, myGoodContigsSet):
     fout = open(outfile, 'w')
     myGoodContigsSet = myGoodContigsSet - {''}
     # contigsDict[key] = [contiglen,headerpos,startseqpos,endseqpos]
-    if (myGoodContigsSet - set(myContigsDict.keys())) != 0:
+    if len(myGoodContigsSet - set(myContigsDict.keys())) != 0:
         print('Error: HapSolo has two seperate set of contigs! Please submit bug report and sent bugreport.log file.')
         foutlogfile = open('bugreport.log','w')
         foutlogfile.write('Begin ContigsDict kyes:\n')
