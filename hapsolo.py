@@ -119,7 +119,7 @@ busco2contigdict = dict()
 contigs2buscodict = dict()
 pythonversion = sys.version_info[0]
 # special_chars are !@#$%^&*()-=+,./\[{}]|;:'><?
-special_chars = '!@#$%^&*()-=+,./\\[{]}|;:"\'><?'
+special_chars = '!@#$%^&*()-=+,/\\[{]}|;:"\'><?'
 
 if pythonversion != 2:
     print("Please run the correct version of Python. You are currently running Python " + str(pythonversion))
