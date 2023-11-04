@@ -120,6 +120,7 @@ contigs2buscodict = dict()
 pythonversion = sys.version_info[0]
 # special_chars are !@#$%^&*()-=+,./\[{}]|;:'><?
 special_chars = '!@#$%^&*-=+,/\\()[{]}|;:"\'><?' # removed . from special chars
+myContigsDict = dict()
 
 if pythonversion != 2:
     print("Please run the correct version of Python. You are currently running Python " + str(pythonversion))
@@ -799,8 +800,12 @@ def WriteNewAssembly(myasmFileName, newASMFileName, myGoodContigsSet):
     fout = open(outfile, 'w')
     myGoodContigsSet = myGoodContigsSet - {''}
     # contigsDict[key] = [contiglen,headerpos,startseqpos,endseqpos]
+    if len(myContigsDict) == 0:
+        print('myContigsDict is empty! Please make sure your assembly fasta file is not empty. If not empty then post a question with output at https://github.com/esolares/HapSolo/issues Along with the following output:')
+        print(myContigsDict)
+        quit(2)
     if len(myGoodContigsSet - set(myContigsDict.keys())) != 0:
-        print('Error: HapSolo has two seperate set of contigs! Please submit bug report and sent bugreport.log file.')
+        print('Error: HapSolo has two seperate set of contigs! Please submit bug report and sent bugreport.log file at https://github.com/esolares/HapSolo/issues.')
         foutlogfile = open('bugreport.log','w')
         foutlogfile.write('Begin ContigsDict kyes:\n')
         for key in myContigsDict.keys():
