@@ -799,20 +799,22 @@ def WriteNewAssembly(myasmFileName, newASMFileName, myGoodContigsSet):
     fout = open(outfile, 'w')
     myGoodContigsSet = myGoodContigsSet - {''}
     # contigsDict[key] = [contiglen,headerpos,startseqpos,endseqpos]
-    if (myGoodContigsSet - set(myContigsDict.keys())) != 0:
+    mySetDiff = myGoodContigsSet - set(myContigsDict.keys())
+    mySetDiffLen = len(mySetDiff)
+    if mySetDiffLen != 0:
         print('Error: HapSolo has two seperate set of contigs! Please submit bug report and sent bugreport.log file.')
         foutlogfile = open('bugreport.log','w')
-        foutlogfile.write('Begin ContigsDict kyes:\n')
+        foutlogfile.write('Begin ContigsDict keys with ' + str(len(myContigsDict.keys())) + ' # of keys:\n')
         for key in myContigsDict.keys():
-            foutlogfile.write(str(key)) #  + ',' + str(myContigsDict[key][0]) + ',' + str(myContigsDict[key][1]) + ',' + str(myContigsDict[key][2]) + ',' + str(myContigsDict[key][3]) + '\n')
+            foutlogfile.write('"' + str(key) + '",') #  + ',' + str(myContigsDict[key][0]) + ',' + str(myContigsDict[key][1]) + ',' + str(myContigsDict[key][2]) + ',' + str(myContigsDict[key][3]) + '\n')
         foutlogfile.write('\nEnd ContigsDict keys\n\n')
-        foutlogfile.write('Begin good contig set:\n')
+        foutlogfile.write('Begin good contig set with ' + str(len(myGoodContigsSet)) + ' # of elements:\n')
         for contig in myGoodContigsSet:
-            foutlogfile.write(str(contig) + ',')
+            foutlogfile.write('"' + str(contig) + '",')
         foutlogfile.write('\nEnd good contig set\n\n')
-        foutlogfile.write('Begin non-matching contig set:\n')
-        for contig in myGoodContigsSet - set(myContigsDict.keys()):
-            foutlogfile.write(str(contig) + ',')
+        foutlogfile.write('Begin non-matching contig set with ' + str(mySetDiffLen) + ' # of elements:\n')
+        for contig in mySetDiff:
+            foutlogfile.write('"' + str(contig) + '",')
         foutlogfile.write('\nEnd non-matching contig set\n\n')
         foutlogfile.close()
         quit(1)
