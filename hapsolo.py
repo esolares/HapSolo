@@ -799,6 +799,10 @@ def WriteNewAssembly(myasmFileName, newASMFileName, myGoodContigsSet):
     fout = open(outfile, 'w')
     myGoodContigsSet = myGoodContigsSet - {''}
     # contigsDict[key] = [contiglen,headerpos,startseqpos,endseqpos]
+    if len(myContigsDict) == 0:
+        print('myContigsDict is empty! Please make sure your assembly fasta file is not empty. If not empty then post a question with output at https://github.com/esolares/HapSolo/issues Along with the following output:')
+        print(myContigsDict)
+        quit(2)
     mySetDiff = myGoodContigsSet - set(myContigsDict.keys())
     mySetDiffLen = len(mySetDiff)
     if mySetDiffLen != 0:
