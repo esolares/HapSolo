@@ -140,6 +140,7 @@ def CalculateContigSizes(asmFileName):
     count = 0
     myContigSizeDict = dict()
     # print('begin for loop')
+    myscerrorlog = ''
     while count < totalLines:
         # print('for loop executed')
         lastPos = headerPos = fin.tell()
@@ -150,13 +151,19 @@ def CalculateContigSizes(asmFileName):
             special_char = False
             for char in header:
                 if char in special_chars:
+                     = char
                     special_char = True
                     break
             # print('found seq_name ' + line)
-            if len(header.split(" ")) > 1 or special_char:
+            if len(header.split(" ")) > 1:
                 print('Spaces found in contig headers. Please remove spaces from contig names before proceeding with any analysis. Spaces, -"s, //"s and other special characters are not allowed in contig names.')
-                print('Special characters except _ cause isues in aligners and BUSCO analysis. This will cause HapSolo to fail, as .')
-                quit(1)
+                quit('1')
+            if special_char:
+                my_log_str_sc = 'Warning! Special characters except _ cause isues in aligners and BUSCO analysis. HapSolo found: ' + special_char + ' in header: ' + header + '. This may cause HapSolo to fail.')
+                myscerrorlog = myscerrorlog + my_log_str_sc + '\n'
+                print(my_log_str_sc)
+                special_char = False
+                #quit(1)
             seqName = header.split(" ")[0].replace('/', '_')
             # seqName = line.split("_")[0]
             lastPos = startPos = fin.tell()
@@ -809,6 +816,7 @@ def WriteNewAssembly(myasmFileName, newASMFileName, myGoodContigsSet):
     if mySetDiffLen != 0:
         print('Error: HapSolo has two seperate set of contigs! Please submit bug report and sent bugreport.log file at https://github.com/esolares/HapSolo/issues.')
         foutlogfile = open('bugreport.log','w')
+        foutlogfile.write(myscerrorlog + '\n')
         foutlogfile.write('Begin ContigsDict keys with ' + str(len(myContigsDict.keys())) + ' # of keys:\n')
         for key in myContigsDict.keys():
             foutlogfile.write('"' + str(key) + '",') #  + ',' + str(myContigsDict[key][0]) + ',' + str(myContigsDict[key][1]) + ',' + str(myContigsDict[key][2]) + ',' + str(myContigsDict[key][3]) + '\n')
