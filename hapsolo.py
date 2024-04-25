@@ -151,7 +151,7 @@ def CalculateContigSizes(asmFileName):
             special_char = False
             for char in header:
                 if char in special_chars:
-                     = char
+                    # = char
                     special_char = True
                     break
             # print('found seq_name ' + line)
@@ -159,7 +159,7 @@ def CalculateContigSizes(asmFileName):
                 print('Spaces found in contig headers. Please remove spaces from contig names before proceeding with any analysis. Spaces, -"s, //"s and other special characters are not allowed in contig names.')
                 quit('1')
             if special_char:
-                my_log_str_sc = 'Warning! Special characters except _ cause isues in aligners and BUSCO analysis. HapSolo found: ' + special_char + ' in header: ' + header + '. This may cause HapSolo to fail.')
+                my_log_str_sc = 'Warning! Special characters except _ cause isues in aligners and BUSCO analysis. HapSolo found: ' + special_char + ' in header: ' + header + '. This may cause HapSolo to fail.'
                 myscerrorlog = myscerrorlog + my_log_str_sc + '\n'
                 print(my_log_str_sc)
                 special_char = False
