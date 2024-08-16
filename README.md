@@ -16,7 +16,7 @@ singularity pull library://esolares/default/hapsolo_busco3:sha256.5070a5b9119b11
 
 ### Singularity RUN COMMANDS:
 This section will be required for running HapSolo and BUSCO3 using singularity initiate singularity and mount current working directory
-<br>Augustus 3.2.2 Config directory Link: [config.tar.gz](https://drive.google.com/file/d/12tgvIXRbHtovWWHdiKlLDMTKyLvk-f7_/view?usp=sharing)
+<br>Augustus 3.2.2 Config directory Link: [config.tar.gz](https://drive.google.com/file/d/1zrHS6mqmIM5f_7n5DW4LrPd1sw32uUrf/view?usp=sharing)
 <br>Note: You will need to download this then upload to your work directory saved in HOSTDIR. to see this echo $HOSTDIR
 ```
 
