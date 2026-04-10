@@ -200,11 +200,36 @@ JOBID: 2  [█████████████░░░░░░░░░░
 
 ## 5. Classify
 
-Apply fixed thresholds (0.7/0.7/0.7) and write primary/secondary assemblies without optimization. Useful for reproducing prior results or applying known-good thresholds.
+Apply fixed thresholds and write primary/secondary assemblies without running the hill-climbing optimization. Useful for reproducing prior results, applying known-good thresholds from a previous training run, or running quick what-if analyses.
 
 ```
 python3 hapsolo_cli.py classify -i assembly_new.fasta --paf assembly_new_self_align.paf.gz -b ortholog_output/
 ```
+
+| Flag | Description |
+|---|---|
+| `-i` | Preprocessed assembly FASTA |
+| `--paf` / `--psl` | Self-alignment file (gzipped or uncompressed) |
+| `-b` | Ortholog classification directory (output of `search`) |
+| `-P` / `--pid` | Fixed PID threshold (default: 0.7) |
+| `-Q` / `--qpct` | Fixed query coverage threshold (default: 0.7) |
+| `-R` / `--qrpct` | Fixed query/reference alignment length ratio threshold (default: 0.7) |
+| `--min-contig` | Minimum contig size for primary assembly (default: 1000 bp) |
+
+**Default behavior** (no thresholds specified) — uses 0.7/0.7/0.7, matching the original HapSolo mode 1 defaults:
+
+```
+python3 hapsolo_cli.py classify -i assembly_new.fasta --paf assembly_new_self_align.paf.gz -b ortholog_output/
+```
+
+**Custom thresholds** — use the exact values found by a previous `train` run, or any values you want to test:
+
+```
+python3 hapsolo_cli.py classify -i assembly_new.fasta --paf assembly_new_self_align.paf.gz -b ortholog_output/ \
+    -P 0.85 -Q 0.60 -R 0.50
+```
+
+The threshold values are encoded in the output filename so you can run `classify` repeatedly with different settings without overwriting earlier results.
 
 # HPC Usage
 
