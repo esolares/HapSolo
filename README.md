@@ -2,232 +2,304 @@
 
 An optimization approach for removing secondary haplotigs during diploid genome assembly and scaffolding.
 
-# Singularity Installation Requirements
-# RECOMMENDED
-Our singularity image of HapSolo contains all required software including BUSCO, and Augustus. Please skip the local install if you are able to pull the Singularity image.
-Running singularity will not require running conda and is the best way to get HapSolo and BUSCO3 working.
-### Downloading the image (only do once)
-```
-# Pull with Singularity
-singularity pull --arch amd64 library://esolares/default/hapsolo_busco3:0.01
-# Pull by unique ID (reproducible even if tags change)
-singularity pull library://esolares/default/hapsolo_busco3:sha256.5070a5b9119b11d7d50da0693c0c5185051a0e690e868a27367f17364ddb31be
-```
+HapSolo runs a hill-climbing search over alignment filter thresholds (PID, query coverage, query/reference length ratio) to minimize a cost function based on conserved single-copy ortholog completeness scores. The result is a primary assembly with reduced haplotype duplication and a secondary assembly containing the purged haplotigs.
 
-### Singularity RUN COMMANDS:
-This section will be required for running HapSolo and BUSCO3 using singularity initiate singularity and mount current working directory
-<br>Augustus 3.2.2 Config directory Link: [config.tar.gz](https://drive.google.com/file/d/1zrHS6mqmIM5f_7n5DW4LrPd1sw32uUrf/view?usp=sharing)
-<br>Note: You will need to download this then upload to your work directory saved in HOSTDIR. to see this echo $HOSTDIR
-```
-
-## MOUNDIR is the mounting point within singulariy
-MOUNTDIR=/data
-## HOSTDIR is your current working directory with all your files
-## Note: You will need the Augustus config folder in your work directory as well as the contigs folder and the odb9 folder for your taxa
-HOSTDIR=$(pwd)
-
-# You will need to download the Augustus 3.2.2 config directory. I have provided a link from gdrive above.
-# Note: You will need to download this then upload to your work directory saved in HOSTDIR. to see this echo $HOSTDIR
-
-# I will work on getting this so you can execute curl or wget. For now you will need to download using a browser and upload via scp or winscp or other method
-# once it is upload you will need to run: 
-tar xzvf config.tar.gz
-
-# Here we will spin up the singularity instance. Please make sure you are running all these commands in your compute node
-# Note: Spinning up the instance will keep this loaded on the server until you execute the singularity stop instance://hapsolo command
-singularity instance start --bind ${HOSTDIR}:${MOUNTDIR} hapsolo_busco3_0.01.sif hapsolo
-
-# Here we will test BUSCO3 and HapSolo as well as ls your current working directory
-singularity exec instance://hapsolo BUSCO.py --help
-singularity exec instance://hapsolo hapsolo.py --help
-singularity exec instance://hapsolo ls /data/
-# you should now see all your files. This means that singularity has access to all your files from the instance. If it does not match please check your HOSTDIR 
-# and make sure you are mounting your HOSTDIR to your MOUNTDIR as noted above.
-# CONGRATULATIONS! You know have singularity running.
-
-# Here is an example BUSCO3 command
-singularity exec instance://hapsolo BUSCO.py -c 24 -m geno -i /data/contigs/tig00000002.fasta -l /data/embryophyta_odb9 -sp arabidopsis -t ./tmp -o testbusco
-
-# Please make sure to append "singularity exec instance://hapsolo" to any command you see in this documentation or scripts to get them to work with singularity. 
-# Also please make sure you have hapsolo running as an instance. You can check by running the following:
-singularity instance list
-
-# To stop your instance you can run the following
-singularity instance stop hapsolo
-
-# Please submit bug reports if you have any issues. Sometimes google will not notify me and you can reach me via my website: edwinsolares.com or on twitter: @edwinsolares10
-# If you are having errors with your odb9, make sure you are not linking it (ln -s) and have a hard copy in your working directory i.e. ${HOSTDIR}/embryophyta_odb9
-```
-
-# Local Installation Requirements (Local install not required if you are running singularity)
-## Please try to use the singularity image instead as there have been issues with the conda version of BUSCO.
-HapSolo is compatible with Python 2.7 and requires the PANDAS package be installed. There is support for Python 3, but Python 2.7 runs faster.
-
-To do this please install conda and run:
-```
-conda create --name HapSolo python=2.7
-conda activate HapSolo
-conda install -c anaconda pandas
-```
-###### Note: HapSolo has been tested and run on BUSCO V3 and Blat V36 and minimap2. We do not recommend using newer versions of BUSCO as it will lead to miss-classification of BUSCO's.
 # Installation
+
 ```
 git clone https://github.com/esolares/HapSolo.git
 cd HapSolo
-HAPSOLO=$(pwd)
-```
-Make sure to export your path to your ENV variables by doing the following and adding this line to all your scripts that run preprocessfasta.py or hapsolo.py
-```
-export PATH=$HAPSOLO:$PATH
-export PATH=$HAPSOLO/scripts:$PATH
-```
-###### Note: If you are running a custom environment for python, make sure to replace the first line of preprocessfasta.py and hapsolo.py to reflect the proper python running environment
-
-# How to run HapSolo
-HapSolo requires a Blat alignment file and a busco directory that contains a busco output for each of the contigs in your contig assembly. To do this we have included a scripts directory that contains scripts that can be used for preprocessing and postprocessing for your HapSolo run. 
-###### Note: For simplicity job submission scripts have been added: sbatch_preprocess.sh and qsub_preprocess.sh for SLURM and SGE respectively that only require that the REF variable be assigned to the name of your contig assembly FASTA file.
-
-We highly recommend you run preprocessfasta.py on your contig assembly first. 
-
-The run syntax of this python script is:
-
-```
-preprocessfasta.py -i CONTIGASSEMBLY.fasta -m INTEGERSIZEOFMAXCONTIGFORQUERY
-
-usage: preprocessfasta.py [-h] -i INPUT [-m MAXCONTIG]
-
-Preprocess FASTA file and outputs a clean FASTA and seperates contigs based on
-unique headers. Removes special chars
-
-optional arguments:
-  -h, --help            show this help message and exit
-  -i INPUT, --input INPUT
-                        Input FASTA file
-  -m MAXCONTIG, --maxcontig MAXCONTIG
-                        Max size of contig in Mb to output in contigs folder.
 ```
 
-By default the maxcontig size is set to 10000000 or 10Mb and is a not a required parameter.
+## Dependencies
 
-This script will create a contigs directory in your current working directory that contains individual FASTA files for each contig. This script also removes any illegal characters in the FASTA header that could cause inconsistent results from either BUSCO or MUMmer. A qsub and sbatch file have been included in the scripts folder that also create the required jobfile.txt and buscojobfile.txt files, as well as convert your fasta files to 2bit for Blat alignment.
-
-HapSolo requires three arguments: Your preprocessed contig assembly file, your Blat PSL file (gzipped or uncompressed), and the location of your BUSCO results for each contig fasta file. 
-
-The run syntax is as follows:
-```
-hapsolo.py -i YOURPREPROCESSEDCONTIGASSEMBLY.fasta --psl YOURPSLFILE.psl -b YOURBUSCOOUTPUTDIRECTORY
-or
-hapsolo.py -i YOURPREPROCESSEDCONTIGASSEMBLY.fasta --paf YOURPAFFILE.paf -b YOURBUSCOOUTPUTDIRECTORY
-hapsolo.py -i contigassembly_new.fasta --paf/psl self_alignment.file -b ./contigs/busco/
-
-usage: hapsolo.py [-h] -i INPUT (-p PSL | -a PAF) -b BUSCOS [-m MAXZEROS] [-t THREADS]
-                  [-n NITERATIONS] [-B BESTN] [-S THETAS] [-D THETAD]
-                  [-F THETAF] [-M THETAM]
-
-Process alignments and BUSCO"s for selecting reduced assembly candidates
-
-optional arguments:
-  -h, --help            show this help message and exit
-  -i INPUT, --input INPUT
-                        Input Fasta file
-  -p PSL, --psl PSL     BLAT PSL alignnment file
-  -a PAF, --paf PAF     Minimap2 PAF alignnment file. Note. paf file
-                        functionality is currently experimental
-
-  -b BUSCOS, --buscos BUSCOS
-                        Location BUSCO output directories. i.e. buscoN/
-  -m MAXZEROS, --maxzeros MAXZEROS
-                        Max # of times cost function delta can consecutively
-                        be 0. Default = 10
-  -t THREADS, --threads THREADS
-                        # of threads. Multiplies iterations by threads.
-                        Default = 1
-  -n NITERATIONS, --niterations NITERATIONS
-                        # of total iterations to run per gradient descent.
-                        Default = 1000
-  -B BESTN, --Bestn BESTN
-                        # of best candidate assemblies to return using
-                        gradient descent. Default = 1
-  -S THETAS, --thetaS THETAS
-                        Weight for single BUSCOs in linear fxn. Default = 1.0
-  -D THETAD, --thetaD THETAD
-                        Weight for single BUSCOs in linear fxn. Default = 1.0
-  -F THETAF, --thetaF THETAF
-                        Weight for single BUSCOs in linear fxn. Default = 0.0
-  -M THETAM, --thetaM THETAM
-                        Weight for single BUSCOs in linear fxn. Default = 1.0
-
--p/--psl and -a/--paf are mutually exclusive
+HapSolo requires Python 3 and the following:
 
 ```
-# All-by-All Alignment. Please choose Blat or MiniMap2
-
-# MiniMap2
-We recommend using one of the following options below when running MiniMap2:
+# Python packages
+pip install -r requirements.txt
 ```
-minimap2 -t 36 -k19 -w5 -A1 -B2 -O3,13 -E2,1 -s200 -z200 -N50 --min-occ-floor=100 ${QRY} ${QRY} > $(basename ${QRY} .fasta)_self_align.paf
-minimap2 -t 36 -P -k19 -w2 -A1 -B2 -O1,6 -E2,1 -s200 -z200 -N50 --min-occ-floor=100 ${QRY} ${QRY} > $(basename ${QRY} .fasta)_self_align.paf
-minimap2 -t 36 -P -G 500k -k19 -w2 -A1 -B2 -O2,4 -E2,1 -s200 -z200 -N50 --max-qlen 10000000 --min-occ-floor=100 --paf-no-hit ${QRY} ${QRY} > $(basename ${QRY} .fasta)_self_align.paf
-```
--t <INT> can be set to the number of cores allocated for the job. In SLURM the variable is SLURM_CPUS_PER_TASK and in SGE the variable is NSLOTS.
-We also recommend testing different options to see if you get better results. HapSolo also runs faster using MiniMap2 paf files.
 
-# Blat all-by-all alignment 
-Here we provide scripts for running Blat on an HPC using SGE or SLURM job schedulers.
-To preprocess, you should have run the qsub_preprocess.sh or the sbatch_preprocess.sh scripts above. These files only require that you assign your FASTA file name to the REF variable. Once the preprocessing step has been completed a jobfile.txt file, a new FASTA file containing _new.fasta appended to the name and a contigs directory containing FASTA files for each contig will have been created. This step does require quite a bit of memory, so it is recommended that you consider this prior to running this step.
+Build the alignment tools from source (small, no external dependencies):
 
-To submit the Blat all-by-all alignment job, we have provided scripts for either SLURM or SGE, sbatch_blat.sh and qsub_blat.sh.
+```
+# minimap2 (required for self-alignment)
+git clone https://github.com/lh3/minimap2
+cd minimap2 && make
+sudo cp minimap2 /usr/local/bin/
+cd ..
 
-To run:
+# miniprot (required for ortholog gene search)
+git clone https://github.com/lh3/miniprot
+cd miniprot && make
+sudo cp miniprot /usr/local/bin/
+cd ..
 ```
-sbatch sbatch_preprocess.sh
-wc -l jobfile.txt
-```
-Here we recommend you insert the output of wc -l to the array setting in your job submission script. Here you will need to assign the new FASTA file that has been created by the preprocess.py Python script to the REF variable in the blat.sh submission scripts. For all intensive purposes, we recommend that you use this new file for all subsequent runs.
 
-To run:
-```
-sbatch sbatch_blat.sh
-```
-###### Note: If the RAM usage is managed by your job scheduler, you will need to alot a sufficient amount of RAM to your job submission script. The contig size will determine how much RAM will be required. We recommend setting this to a minimum of 4GB. Larger files may require 8-16GB of RAM. For mammals, which are repeat rich, require a minimum value of 16GB. 
-If all alignment jobs completed successfully, we will then need to concatenate the individual PSL files into a larger aligment file. To do this we have provided the bash_andreaconcatpsl.sh script provided by A. Minio at the Cantu Lab in UC Davis.
+Or download precompiled binaries:
 
-To run:
+```
+# minimap2 release binaries
+wget https://github.com/lh3/minimap2/releases/download/v2.28/minimap2-2.28_x64-linux.tar.bz2
+tar xf minimap2-2.28_x64-linux.tar.bz2
+sudo cp minimap2-2.28_x64-linux/minimap2 /usr/local/bin/
+```
+
+BLAT is supported as an alternative aligner if you prefer it. Download the precompiled binary from UCSC:
+
+```
+wget https://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/blat/blat
+chmod +x blat
+sudo mv blat /usr/local/bin/
+```
+
+## OrthoDB Lineage Datasets
+
+HapSolo classifies conserved orthologs against an OrthoDB lineage dataset. Choose the lineage that best matches your taxon. Supported versions: ODB9, ODB10, ODB11.
+
+```
+# ODB10 example (Diptera)
+wget https://busco-data.ezlab.org/v5/data/lineages/diptera_odb10.2024-01-08.tar.gz
+tar xzf diptera_odb10.2024-01-08.tar.gz
+```
+
+Browse other lineages (insecta, vertebrata, mammalia, embryophyta, etc.):
+- ODB9: https://busco-data.ezlab.org/v3/data/lineages/
+- ODB10: https://busco-data.ezlab.org/v5/data/lineages/
+
+# Quick Start
+
+The unified CLI (`hapsolo_cli.py`) drives the entire pipeline through five subcommands:
+
+```
+python3 hapsolo_cli.py preprocess -i assembly.fasta
+python3 hapsolo_cli.py align      -i assembly_new.fasta -t 8
+python3 hapsolo_cli.py search     -i assembly_new.fasta -l diptera_odb10/ -o ortholog_output/ -t 8
+python3 hapsolo_cli.py train      -i assembly_new.fasta --paf assembly_new_self_align.paf.gz -b ortholog_output/ -t 32 -n 1000
+```
+
+The optimized primary and secondary assemblies are written to the `asms/` directory.
+
+Run `python3 hapsolo_cli.py` (no arguments) to see the full help, or `python3 hapsolo_cli.py <subcommand> --help` for details on any step.
+
+# Pipeline Steps
+
+## 1. Preprocess
+
+Clean FASTA headers (remove special characters, ensure uniqueness) and split contigs into individual files.
+
+```
+python3 hapsolo_cli.py preprocess -i assembly.fasta [-m MAXCONTIG_MB]
+```
+
+| Flag | Description |
+|---|---|
+| `-i` | Input assembly FASTA |
+| `-m` | Maximum contig size in Mb for individual file output (default: 10). Contigs larger than this are still in the main output FASTA but skipped for per-contig processing. |
+
+**Output:**
+- `assembly_new.fasta` — sanitized headers
+- `contigs/` — individual per-contig FASTA files
+- `contigs/name_mapping.tsv` — original-to-sanitized name lookup table
+
+## 2. Align
+
+Run all-by-all self-alignment to identify candidate haplotig pairs.
+
+```
+python3 hapsolo_cli.py align -i assembly_new.fasta -t 8 [--aligner minimap2|blat] [--no-gzip]
+```
+
+| Flag | Description |
+|---|---|
+| `-i` | Preprocessed assembly FASTA |
+| `-t` | Number of threads (default: 1) |
+| `--aligner` | `minimap2` (default) or `blat` |
+| `-o` | Output filename (default: auto-named) |
+| `--no-gzip` | Skip the gzip compression step |
+
+**Output:** A gzipped PAF (or PSL) file alongside the input assembly. HapSolo reads `.gz` files directly, so no decompression is needed for downstream steps.
+
+The default minimap2 parameters are tuned for sensitive self-alignment with up to 50 secondary hits per query. These parameters reproduce the published HapSolo results and work well for most diploid assemblies.
+
+### Tuning alignment parameters
+
+Advanced users can run minimap2 manually with custom parameters and feed the result directly to `train`:
+
+```
+minimap2 [your custom params] assembly_new.fasta assembly_new.fasta | gzip > my_align.paf.gz
+python3 hapsolo_cli.py train -i assembly_new.fasta --paf my_align.paf.gz -b ortholog_output/
+```
+
+For reference, the default parameters used by `hapsolo align` are:
+
+```
+minimap2 -t <threads> -P -G 500k -k19 -w2 -A1 -B2 -O2,4 -E2,1 \
+    -s200 -z200 -N50 --max-qlen 10000000 --min-occ-floor=100 --paf-no-hit \
+    assembly_new.fasta assembly_new.fasta | gzip > assembly_new_self_align.paf.gz
+```
+
+Avoid the `-x asm5` preset for self-alignment — it is tuned for high-identity assembly-to-reference alignment and discards most haplotig candidates.
+
+**Reducing compute time with `-N`:** The `-N50` flag asks minimap2 to report up to 50 secondary alignments per query, which is the most expensive part of the run on large assemblies. Lowering this value (for example `-N20` or `-N10`) can substantially reduce alignment time and PAF file size and may still produce a workable result for HapSolo. However, this is a tunable knob — the optimal `-N` for your assembly depends on its repeat content, ploidy, and haplotig structure. We recommend testing different values on a representative dataset and comparing the resulting primary assembly statistics (size, BUSCO/ortholog completeness, contig count) before adopting a lower value for production runs.
+
+## 3. Search (Ortholog Classification)
+
+Align OrthoDB protein profiles against each contig with miniprot, then classify each ortholog as Complete, Fragmented, or Missing per contig. This produces the BUSCO-like gene completeness metrics consumed by the optimizer.
+
+```
+python3 hapsolo_cli.py search -i assembly_new.fasta -l diptera_odb10/ -o ortholog_output/ -t 8
+```
+
+| Flag | Description |
+|---|---|
+| `-i` | Preprocessed assembly FASTA |
+| `-l` | Path to the OrthoDB lineage dataset directory |
+| `-o` | Output directory for per-contig classification files (default: `busco_output`) |
+| `-t` | Number of threads for miniprot |
+
+**Output:** Per-contig TSV files in the output directory, in the format expected by the optimizer.
+
+## 4. Train
+
+Run hill-climbing optimization to find the alignment filter thresholds that minimize the cost function. Each thread starts from a random initial point and explores independently.
+
+```
+python3 hapsolo_cli.py train -i assembly_new.fasta --paf assembly_new_self_align.paf.gz -b ortholog_output/ -t 32 -n 1000
+```
+
+| Flag | Description |
+|---|---|
+| `-i` | Preprocessed assembly FASTA |
+| `--paf` / `--psl` | Self-alignment file (gzipped or uncompressed) |
+| `-b` | Ortholog classification directory (output of `search`) |
+| `-t` | Number of parallel threads (default: 1). Total iterations = `-t × -n` |
+| `-n` | Iterations per thread (default: 1000) |
+| `-B` | Number of best candidate assemblies to return (default: 1) |
+| `--min-contig` | Minimum contig size for primary assembly (default: 1000 bp) |
+| `-S` / `-D` / `-F` / `-M` | Cost function weights for Single, Duplicate, Fragmented, Missing orthologs |
+
+**Cost function:** `(F·θF + D·θD + M·θM) / (S·θS)`
+
+Defaults: θS=1.0, θD=1.0, θF=0.0, θM=1.0
+
+Lower scores are better. The optimizer minimizes duplicates and missing orthologs while maximizing single-copy orthologs.
+
+**Output:** Primary and secondary assembly FASTAs in the `asms/` directory, plus `.scores` and `.deltascores` files containing the cost trajectory of every iteration.
+
+### Progress display
+
+During training, each thread shows a live progress bar with its current parameters and score:
+
+```
+JOBID: 0  [██████████████░░░░░░░░░░░░░░░░] 460/1000   PID: 0.7521 QPMin: 0.6843 QRPMin: 0.5912 CostΔ +0.0023 Score: 0.4156
+JOBID: 1  [████████████░░░░░░░░░░░░░░░░░░] 392/1000   PID: 0.6234 QPMin: 0.7102 QRPMin: 0.4587 CostΔ +0.0000 Score: 0.4892
+JOBID: 2  [█████████████░░░░░░░░░░░░░░░░░] 437/1000   PID: 0.8104 QPMin: 0.5621 QRPMin: 0.6342 CostΔ +0.0011 Score: 0.4321
+...
+```
+
+## 5. Classify
+
+Apply fixed thresholds (0.7/0.7/0.7) and write primary/secondary assemblies without optimization. Useful for reproducing prior results or applying known-good thresholds.
+
+```
+python3 hapsolo_cli.py classify -i assembly_new.fasta --paf assembly_new_self_align.paf.gz -b ortholog_output/
+```
+
+# HPC Usage
+
+## Choosing a Python interpreter
+
+`hapsolo_cli.py` invokes sub-scripts using the same Python interpreter that launches it. On HPC systems with multiple Python versions installed (e.g., `python3`, `python3.9`, `python3.10`), choose your version in either of two ways:
+
+**Option 1 — invoke directly:**
+```
+python3.10 hapsolo_cli.py train ...
+```
+All sub-scripts inherit `python3.10` automatically.
+
+**Option 2 — use the `--python` flag:**
+```
+python3 hapsolo_cli.py --python python3.10 train ...
+python3 hapsolo_cli.py --python /opt/python/3.11/bin/python3 train ...
+```
+
+This is useful when the parent script must use one interpreter but the workers need another.
+
+## Example SLURM batch script
+
+```
+#!/bin/bash
+#SBATCH --job-name=hapsolo
+#SBATCH --cpus-per-task=32
+#SBATCH --mem=64G
+#SBATCH --time=24:00:00
+
+module load python/3.10 minimap2 miniprot
+
+HAPSOLO=/path/to/HapSolo
+ASM=my_assembly.fasta
+LINEAGE=/path/to/diptera_odb10
+
+python3 $HAPSOLO/hapsolo_cli.py preprocess -i $ASM
+python3 $HAPSOLO/hapsolo_cli.py align      -i ${ASM%.fasta}_new.fasta -t $SLURM_CPUS_PER_TASK
+python3 $HAPSOLO/hapsolo_cli.py search     -i ${ASM%.fasta}_new.fasta -l $LINEAGE -o ortholog_output -t $SLURM_CPUS_PER_TASK
+python3 $HAPSOLO/hapsolo_cli.py train      -i ${ASM%.fasta}_new.fasta \
+                                            --paf ${ASM%.fasta}_new_self_align.paf.gz \
+                                            -b ortholog_output \
+                                            -t $SLURM_CPUS_PER_TASK -n 2000
+```
+
+# Running Steps Individually
+
+The CLI is a thin wrapper. Each step can be invoked directly:
+
+```
+# 1. Preprocess
+python3 preprocessfasta.py -i assembly.fasta
+
+# 2. Self-alignment (use the parameters above, not -x asm5)
+minimap2 -t 36 -P -G 500k -k19 -w2 -A1 -B2 -O2,4 -E2,1 -s200 -z200 -N50 \
+    --max-qlen 10000000 --min-occ-floor=100 --paf-no-hit \
+    assembly_new.fasta assembly_new.fasta | gzip > self_align.paf.gz
+
+# 3. Ortholog classification
+python3 search_orthologs.py -i assembly_new.fasta -l diptera_odb10/ -o ortholog_output/ -t 8
+
+# 4. Optimization (mode 0 = hill climbing, mode 1 = fixed thresholds)
+python3 hapsolo.py -i assembly_new.fasta --paf self_align.paf.gz -b ortholog_output/ \
+    --mode 0 -t 32 -n 1000
+```
+
+# BLAT Alternative
+
+HapSolo also accepts BLAT PSL alignment files. HPC batch scripts for BLAT are provided in the `scripts/` directory for SLURM (`sbatch_blat.sh`) and SGE (`qsub_blat.sh`). After BLAT array jobs complete, concatenate individual PSL files:
+
 ```
 bash_andreaconcatpsl.sh myoutput_selfaln.PSL
+python3 hapsolo_cli.py train -i assembly_new.fasta --psl myoutput_selfaln.PSL.gz -b ortholog_output/
 ```
-This script will look for all job*.PSL files that have been created by the parallel all-by-all alignment. 
-###### Note: You could also use the parallel version of Blat, pblat available here https://github.com/icebert/pblat
 
-# BUSCO run for each contig fasta file
-Here we need to extract contigs larger than 10Mb. Make sure to run this after the initial preprocess.py step mentioned above.
-To do this we recommend you run the following:
-```
-bash_buscopreprocess.sh
-cd contigs
-wc -l buscojobfile.txt
-```
-We will use the output of the last line and enter it into the job array of either the sbatch or qsub script. This should look like this: 1-N, where N is the number returned by wc -l. You will also need to set the number of cores to run for each array job. 
-###### Note: For more information on how to run and configure array jobs, please contact your IT help desk or refer the your job scheduler's manual.
-Next you wil need to make sure you have the proper lineage and species selected for your particular sample. You can look this up at https://busco.ezlab.org/ and http://bioinf.uni-greifswald.de/augustus/ respectively. Once these changes have been made to your sbatch_busco.sh or qsub_busco.sh script, you can submit them to your HPC queue.
+For the parallel BLAT implementation, see https://github.com/icebert/pblat
 
+# Output Files
 
-# run HapSolo
-Once you have concatenated all your psl output files or finished minimap2, and finished your BUSCO3 run. You can run HapSolo. Currently HapSolo does not accept absolute paths. This is a known bug and wil be fixed shortly. If your current working directy is:
+After a successful run, you will have:
+
 ```
-/nfsmount/mydir/hapsolowd
+asms/
+  <assembly>_<minContig>_<PID>_<QRPctMin>to<QRPctMax>_<QPctMin>_primary.fasta
+  <assembly>_<minContig>_<PID>_<QRPctMin>to<QRPctMax>_<QPctMin>_secondary.fasta
+<assembly>_<timestamp>.scores
+<assembly>_<timestamp>.deltascores
 ```
-and your input files shoud look like this:
-```
-/nfsmount/mydir/hapsolowd/myalignmentfile
-/nfsmount/mydir/hapsolowd/myassembly.fasta
-/nfsmount/mydir/hapsolowd/contigs/busco
-```
-then you should run HapSolo as the following:
-```
-hapsolo.py -i myassembly.fasta --psl myalignmentfile.psl -b contigs/busco
-```
-or
-```
-hapsolo.py -i myassembly.fasta --paf myalignmentfile.paf -b contigs/busco
-```
+
+The filenames encode the threshold values selected by the optimizer. The `.scores` and `.deltascores` files contain comma-separated cost values for every iteration of every thread, useful for plotting convergence curves.
+
+# Limitations
+
+- HapSolo does not accept absolute paths for input files. All file paths must be relative to the current working directory.
+
+# Bug Reports
+
+Please submit issues at https://github.com/esolares/HapSolo/issues

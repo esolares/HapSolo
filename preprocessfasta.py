@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 @author: Edwin
@@ -15,33 +15,32 @@ args = parser.parse_args()
 asmfilename = args.input
 maxcontigsize = args.maxcontig
 
-if maxcontigsize == None:
+if maxcontigsize is None:
     maxcontigsize = 10*1000000
 else:
-    maxcontigsize = 1*1000000
+    maxcontigsize = int(maxcontigsize)*1000000
 
-fin = open(asmfilename)
-mylines = fin.readlines()
-myheaderidxs = list()
-for i in range(len(mylines)):
-    mylines[i] = mylines[i].strip()
-    if mylines[i][0] == '>':
-        myheaderidxs.append(i)
+# First pass: collect original headers (streaming, no full file load)
+original_headers = []
+with open(asmfilename) as fin:
+    for line in fin:
+        line = line.strip()
+        if line and line[0] == '>':
+            original_headers.append(line[1:].split()[0])
 
+if len(original_headers) == 0:
+    print('No sequences found in FASTA file: ' + asmfilename)
+    quit(1)
 
-maxlen = -1
-for i in range(len(myheaderidxs)):
-    mylines[myheaderidxs[i]] = re.sub('[^a-zA-Z0-9\n\.]', '_', mylines[myheaderidxs[i]][1:])
-    mylen = len(mylines[myheaderidxs[i]])
-    if mylen > maxlen:
-        maxlen = mylen
+# Sanitize headers: replace special characters with underscores
+sanitized_headers = [re.sub('[^a-zA-Z0-9.]', '_', h) for h in original_headers]
 
+# Find minimum prefix length that keeps all headers unique
+maxlen = max(len(h) for h in sanitized_headers)
 uniqueheadersize = -1
 for i in range(1, maxlen+1):
-    mytempset = set()
-    for j in range(len(myheaderidxs)):
-        mytempset.add(mylines[myheaderidxs[j]][0:i])
-    if len(mytempset) == len(myheaderidxs):
+    prefixes = set(h[0:i] for h in sanitized_headers)
+    if len(prefixes) == len(sanitized_headers):
         uniqueheadersize = i
         break
 
@@ -49,38 +48,64 @@ if uniqueheadersize == -1:
     print('This FASTA file does not contain unique headers. Please fix and rerun again.')
     quit(1)
 
-for i in range(len(myheaderidxs)):
-    mylines[myheaderidxs[i]] = mylines[myheaderidxs[i]][0:uniqueheadersize]
+# Truncate to unique prefix
+final_names = [h[0:uniqueheadersize] for h in sanitized_headers]
 
-mytempset = set()
-for i in range(len(myheaderidxs)):
-    mytempset.add(mylines[myheaderidxs[i]].split('_')[0])
+# If first underscore-delimited field alone is unique, use that instead
+first_fields = set(h.split('_')[0] for h in final_names)
+if len(first_fields) == len(final_names):
+    final_names = [h.split('_')[0] for h in final_names]
 
-if mytempset == len(myheaderidxs):
-    mylines[myheaderidxs[i]] = mylines[myheaderidxs[i]].split('_')[0]
+# Build lookup: original header -> final sanitized name
+name_lookup = dict()
+for i in range(len(original_headers)):
+    name_lookup[original_headers[i]] = final_names[i]
 
+# Prepare output
 fileext = asmfilename.split('.')[-1]
-fout = open(asmfilename.replace('.' + fileext, '') + '_new.' + fileext, 'w')
+outfile = asmfilename.replace('.' + fileext, '') + '_new.' + fileext
 outdir = "contigs"
-try:
-    os.stat(outdir)
-except:
+if not os.path.exists(outdir):
     os.mkdir(outdir)
 
-for j in range(len(myheaderidxs)):
-    fout.write('>' + mylines[myheaderidxs[j]] + '\n')
-    mystr = ''
-    if j < len(myheaderidxs)-1:
-        for i in range(myheaderidxs[j]+1, myheaderidxs[j+1]):
-            mystr = mystr + mylines[i]
-    else:
-        for i in range(myheaderidxs[j]+1, len(mylines)):
-            mystr = mystr + mylines[i]
-    fout.write(mystr + '\n')
-    if len(mystr) < maxcontigsize:
-        contigout = open(outdir + '/' + mylines[myheaderidxs[j]] + '.fasta', 'w')
-        contigout.write('>' + mylines[myheaderidxs[j]] + '\n')
-        contigout.write(mystr + '\n')
-        contigout.close()
+# Second pass: stream through FASTA and write outputs (one contig at a time)
+contig_idx = 0
+current_name = None
+seq_parts = []
 
-fout.close()
+def write_contig(name, seq_parts, fout, outdir, maxcontigsize):
+    seq = ''.join(seq_parts)
+    fout.write('>' + name + '\n')
+    fout.write(seq + '\n')
+    if len(seq) < maxcontigsize:
+        with open(os.path.join(outdir, name + '.fasta'), 'w') as contigout:
+            contigout.write('>' + name + '\n')
+            contigout.write(seq + '\n')
+
+with open(outfile, 'w') as fout:
+    with open(asmfilename) as fin:
+        for line in fin:
+            line = line.strip()
+            if not line:
+                continue
+            if line[0] == '>':
+                # Write previous contig if any
+                if current_name is not None:
+                    write_contig(current_name, seq_parts, fout, outdir, maxcontigsize)
+                # Start new contig
+                original = line[1:].split()[0]
+                current_name = name_lookup[original]
+                seq_parts = []
+            else:
+                seq_parts.append(line)
+
+    # Write last contig
+    if current_name is not None:
+        write_contig(current_name, seq_parts, fout, outdir, maxcontigsize)
+
+# Write name mapping file: original_name -> sanitized_name
+with open(os.path.join(outdir, 'name_mapping.tsv'), 'w') as mapout:
+    mapout.write('#original_name\tsanitized_name\n')
+    for i in range(len(original_headers)):
+        mapout.write(original_headers[i] + '\t' + final_names[i] + '\n')
+print('Name mapping written to ' + outdir + '/name_mapping.tsv')
