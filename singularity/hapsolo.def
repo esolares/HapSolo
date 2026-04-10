@@ -1,0 +1,102 @@
+Bootstrap: docker
+From: python:3.11-slim
+
+%labels
+    Maintainer    Edwin Solares
+    Application   HapSolo
+    Description   Haplotype reduction for diploid genome assemblies
+    Version       1.0
+    Source        https://github.com/esolares/HapSolo
+
+%files
+    # HapSolo source files (relative to the directory containing this .def file,
+    # so build with: cd singularity/ && sudo singularity build hapsolo.sif hapsolo.def
+    ../hapsolo.py                /opt/HapSolo/hapsolo.py
+    ../hapsolo_cli.py            /opt/HapSolo/hapsolo_cli.py
+    ../preprocessfasta.py        /opt/HapSolo/preprocessfasta.py
+    ../search_orthologs.py       /opt/HapSolo/search_orthologs.py
+    ../requirements.txt          /opt/HapSolo/requirements.txt
+    ../README.md                 /opt/HapSolo/README.md
+
+    # External binaries — place them in singularity/binaries/<tool>/<binary>
+    # before building. See each directory's README for download instructions.
+    binaries/minimap2/minimap2   /opt/minimap2/minimap2
+    binaries/miniprot/miniprot   /opt/miniprot/miniprot
+    # Optional alternative aligner — uncomment if you want it in the image:
+    binaries/blat/blat         /opt/blat/blat
+
+%post
+    set -e
+
+    # System dependencies
+    apt-get update
+    apt-get install -y --no-install-recommends \
+        gzip \
+        wget \
+        ca-certificates
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+    # Python dependencies
+    pip install --no-cache-dir -r /opt/HapSolo/requirements.txt
+
+    # Make HapSolo scripts executable
+    chmod +x /opt/HapSolo/hapsolo.py
+    chmod +x /opt/HapSolo/hapsolo_cli.py
+    chmod +x /opt/HapSolo/preprocessfasta.py
+    chmod +x /opt/HapSolo/search_orthologs.py
+
+    # Make external binaries executable
+    chmod +x /opt/minimap2/minimap2
+    chmod +x /opt/miniprot/miniprot
+    [ -f /opt/blat/blat ] && chmod +x /opt/blat/blat || true
+
+    # Create convenience symlinks in /usr/local/bin so all tools are on PATH
+    ln -sf /opt/HapSolo/hapsolo_cli.py     /usr/local/bin/hapsolo
+    ln -sf /opt/HapSolo/hapsolo.py         /usr/local/bin/hapsolo.py
+    ln -sf /opt/HapSolo/preprocessfasta.py /usr/local/bin/preprocessfasta.py
+    ln -sf /opt/HapSolo/search_orthologs.py /usr/local/bin/search_orthologs.py
+    ln -sf /opt/minimap2/minimap2          /usr/local/bin/minimap2
+    ln -sf /opt/miniprot/miniprot          /usr/local/bin/miniprot
+    [ -f /opt/blat/blat ] && ln -sf /opt/blat/blat /usr/local/bin/blat || true
+
+%environment
+    export PATH=/opt/HapSolo:/opt/minimap2:/opt/miniprot:/opt/blat:$PATH
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+%runscript
+    exec python3 /opt/HapSolo/hapsolo_cli.py "$@"
+
+%test
+    # Smoke tests run at the end of the build
+    set -e
+    python3 --version
+    python3 -c "import pandas, tqdm; print('pandas', pandas.__version__, 'tqdm', tqdm.__version__)"
+    minimap2 --version
+    miniprot --version
+    python3 /opt/HapSolo/hapsolo_cli.py --help > /dev/null
+    echo "All smoke tests passed."
+
+%help
+    HapSolo Singularity image
+    =========================
+
+    Build:
+        cd singularity/
+        # Place required binaries in binaries/<tool>/ first (see each README)
+        sudo singularity build hapsolo.sif hapsolo.def
+
+    Run the unified CLI:
+        singularity run hapsolo.sif preprocess -i assembly.fasta
+        singularity run hapsolo.sif align      -i assembly_new.fasta -t 8
+        singularity run hapsolo.sif search     -i assembly_new.fasta -l diptera_odb10/ -t 8
+        singularity run hapsolo.sif train      -i assembly_new.fasta --paf assembly_new_self_align.paf.gz -b ortholog_output/ -t 32 -n 1000
+
+    Or invoke individual scripts:
+        singularity exec hapsolo.sif hapsolo.py --help
+        singularity exec hapsolo.sif minimap2 --version
+        singularity exec hapsolo.sif miniprot --version
+
+    Bind a host directory:
+        singularity run --bind /path/to/data:/data hapsolo.sif preprocess -i /data/assembly.fasta
