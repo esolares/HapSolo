@@ -6,7 +6,7 @@ from setuptools import setup, find_packages
 dependencies = ["pandas>=1.0", "tqdm>=4.0"]
 
 setup(name='hapsolo',
-      version='0.1',
+      version='1.0',
       packages=[],
       author='ESB-AI-Lab',
       install_requires=dependencies,
